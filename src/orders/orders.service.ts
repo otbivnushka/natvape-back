@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Order } from './entities/order.entity';
@@ -59,7 +63,8 @@ export class OrdersService {
         productImage: item.product.image,
         variantKey: item.variantKey,
         variantName: item.variantKey
-          ? item.product.variants?.find((v) => v.value === item.variantKey)?.name ?? null
+          ? (item.product.variants?.find((v) => v.value === item.variantKey)
+              ?.name ?? null)
           : null,
         quantity: item.quantity,
         price: Number(item.product.price),
@@ -70,7 +75,9 @@ export class OrdersService {
 
     for (const item of cartItems) {
       if (item.variantKey) {
-        const variant = item.product.variants?.find((v) => v.value === item.variantKey);
+        const variant = item.product.variants?.find(
+          (v) => v.value === item.variantKey,
+        );
         if (variant) {
           await this.dataSource
             .createQueryBuilder()

@@ -6,7 +6,8 @@ export const productsData = [
     oldPrice: 30,
     rating: 4.5,
     image: 'https://placehold.co/400x400/1a1a2e/e94560?text=Bubble+Gum',
-    description: 'Фруктовая жидкость для электронных сигарет с ярким вкусом жевательной резинки.',
+    description:
+      'Фруктовая жидкость для электронных сигарет с ярким вкусом жевательной резинки.',
     badge: 'SALE',
     brand: 'HQD',
     variantLabel: 'Вкус',
@@ -62,9 +63,7 @@ export const productsData = [
     badge: null,
     brand: 'HQD',
     variantLabel: 'Вкус',
-    variants: [
-      { name: 'Клубника', value: 'strawberry', stock: 9 },
-    ],
+    variants: [{ name: 'Клубника', value: 'strawberry', stock: 9 }],
     colors: [],
   },
   {
@@ -146,9 +145,7 @@ export const productsData = [
     badge: null,
     brand: 'Aspire',
     variantLabel: null,
-    variants: [
-      { name: '1.8Ω', value: '1.8', stock: 30 },
-    ],
+    variants: [{ name: '1.8Ω', value: '1.8', stock: 30 }],
     colors: [],
   },
   {
@@ -179,9 +176,7 @@ export const productsData = [
     badge: 'SALE',
     brand: 'SMOK',
     variantLabel: null,
-    variants: [
-      { name: '0.6Ω', value: '0.6', stock: 8 },
-    ],
+    variants: [{ name: '0.6Ω', value: '0.6', stock: 8 }],
     colors: [],
   },
   {
@@ -247,9 +242,7 @@ export const productsData = [
     badge: null,
     brand: 'Siberia',
     variantLabel: 'Крепость',
-    variants: [
-      { name: 'Normal', value: 'normal', stock: 5 },
-    ],
+    variants: [{ name: 'Normal', value: 'normal', stock: 5 }],
     colors: [],
   },
   {
@@ -350,9 +343,7 @@ export const productsData = [
     badge: null,
     brand: 'Puff Bar',
     variantLabel: 'Вкус',
-    variants: [
-      { name: 'Яблоко', value: 'apple', stock: 8 },
-    ],
+    variants: [{ name: 'Яблоко', value: 'apple', stock: 8 }],
     colors: [],
   },
   {
@@ -366,9 +357,7 @@ export const productsData = [
     badge: null,
     brand: 'GeekVape',
     variantLabel: 'Вкус',
-    variants: [
-      { name: 'Черника', value: 'blueberry', stock: 11 },
-    ],
+    variants: [{ name: 'Черника', value: 'blueberry', stock: 11 }],
     colors: [],
   },
   {
@@ -382,9 +371,7 @@ export const productsData = [
     badge: null,
     brand: 'Wotofo',
     variantLabel: null,
-    variants: [
-      { name: '0.5Ω', value: '0.5', stock: 22 },
-    ],
+    variants: [{ name: '0.5Ω', value: '0.5', stock: 22 }],
     colors: [],
   },
   {
@@ -398,9 +385,7 @@ export const productsData = [
     badge: null,
     brand: 'Voopoo',
     variantLabel: null,
-    variants: [
-      { name: '0.6Ω', value: '0.6', stock: 16 },
-    ],
+    variants: [{ name: '0.6Ω', value: '0.6', stock: 16 }],
     colors: [],
   },
   {

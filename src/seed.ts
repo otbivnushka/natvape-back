@@ -9,8 +9,6 @@ import { User } from './users/entities/user.entity';
 import { Address } from './addresses/entities/address.entity';
 import { Order } from './orders/entities/order.entity';
 import { OrderItem } from './orders/entities/order-item.entity';
-import { CartItem } from './cart/entities/cart-item.entity';
-import { WishlistItem } from './wishlist/entities/wishlist-item.entity';
 import { categoriesData, productsData } from './data/products';
 import * as bcrypt from 'bcrypt';
 
@@ -24,7 +22,9 @@ async function seed() {
   try {
     await queryRunner.startTransaction();
 
-    await queryRunner.query('TRUNCATE TABLE cart_items, wishlist_items, order_items, orders, addresses, product_variants, product_colors, products, categories, users CASCADE');
+    await queryRunner.query(
+      'TRUNCATE TABLE cart_items, wishlist_items, order_items, orders, addresses, product_variants, product_colors, products, categories, users CASCADE',
+    );
 
     const categoryMap = new Map<string, Category>();
     for (const catData of categoriesData) {
@@ -100,7 +100,8 @@ async function seed() {
       orderId: savedOrder1.id,
       productId: 1,
       productName: 'Жидкость Bubble Gum 50ml',
-      productImage: 'https://placehold.co/400x400/1a1a2e/e94560?text=Bubble+Gum',
+      productImage:
+        'https://placehold.co/400x400/1a1a2e/e94560?text=Bubble+Gum',
       variantKey: 'cherry',
       variantName: 'Вишня',
       quantity: 2,
@@ -152,7 +153,8 @@ async function seed() {
       orderId: savedOrder3.id,
       productId: 1,
       productName: 'Жидкость Bubble Gum 50ml',
-      productImage: 'https://placehold.co/400x400/1a1a2e/e94560?text=Bubble+Gum',
+      productImage:
+        'https://placehold.co/400x400/1a1a2e/e94560?text=Bubble+Gum',
       variantKey: 'apple',
       variantName: 'Яблоко',
       quantity: 3,
@@ -170,4 +172,4 @@ async function seed() {
   }
 }
 
-seed();
+void seed();

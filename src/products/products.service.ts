@@ -12,7 +12,8 @@ export class ProductsService {
   ) {}
 
   async findAll(query: QueryProductsDto) {
-    const qb = this.productsRepository.createQueryBuilder('product')
+    const qb = this.productsRepository
+      .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
       .leftJoinAndSelect('product.variants', 'variants')
       .leftJoinAndSelect('product.colors', 'colors');
@@ -22,7 +23,9 @@ export class ProductsService {
     }
 
     if (query.search) {
-      qb.andWhere('product.name ILIKE :search', { search: `%${query.search}%` });
+      qb.andWhere('product.name ILIKE :search', {
+        search: `%${query.search}%`,
+      });
     }
 
     if (query.brand) {
@@ -74,16 +77,18 @@ export class ProductsService {
         badge: item.badge,
         brand: item.brand,
         variantLabel: item.variantLabel,
-        variants: item.variants?.map((v) => ({
-          name: v.name,
-          value: v.value,
-          stock: v.stock,
-        })) || [],
-        colors: item.colors?.map((c) => ({
-          name: c.name,
-          hex: c.hex,
-          stock: c.stock,
-        })) || [],
+        variants:
+          item.variants?.map((v) => ({
+            name: v.name,
+            value: v.value,
+            stock: v.stock,
+          })) || [],
+        colors:
+          item.colors?.map((c) => ({
+            name: c.name,
+            hex: c.hex,
+            stock: c.stock,
+          })) || [],
       })),
       meta: {
         total,
@@ -115,21 +120,24 @@ export class ProductsService {
       badge: product.badge,
       brand: product.brand,
       variantLabel: product.variantLabel,
-      variants: product.variants?.map((v) => ({
-        name: v.name,
-        value: v.value,
-        stock: v.stock,
-      })) || [],
-      colors: product.colors?.map((c) => ({
-        name: c.name,
-        hex: c.hex,
-        stock: c.stock,
-      })) || [],
+      variants:
+        product.variants?.map((v) => ({
+          name: v.name,
+          value: v.value,
+          stock: v.stock,
+        })) || [],
+      colors:
+        product.colors?.map((c) => ({
+          name: c.name,
+          hex: c.hex,
+          stock: c.stock,
+        })) || [],
     };
   }
 
   async getBrands(category?: string) {
-    const qb = this.productsRepository.createQueryBuilder('product')
+    const qb = this.productsRepository
+      .createQueryBuilder('product')
       .select('DISTINCT product.brand', 'brand')
       .leftJoin('product.category', 'category');
 

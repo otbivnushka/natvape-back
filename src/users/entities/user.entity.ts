@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
 import { CartItem } from '../../cart/entities/cart-item.entity';
 import { WishlistItem } from '../../wishlist/entities/wishlist-item.entity';
 import { Order } from '../../orders/entities/order.entity';

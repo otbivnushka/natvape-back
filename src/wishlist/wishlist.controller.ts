@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
@@ -21,7 +29,10 @@ export class WishlistController {
   }
 
   @Delete(':productId')
-  async removeItem(@CurrentUser() user: User, @Param('productId') productId: string) {
+  async removeItem(
+    @CurrentUser() user: User,
+    @Param('productId') productId: string,
+  ) {
     return this.wishlistService.removeItem(user.id, +productId);
   }
 }

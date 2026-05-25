@@ -1,8 +1,15 @@
 import { DefaultNamingStrategy, NamingStrategyInterface } from 'typeorm';
 import { snakeCase } from 'typeorm/util/StringUtils';
 
-export class SnakeNamingStrategy extends DefaultNamingStrategy implements NamingStrategyInterface {
-  columnName(propertyName: string, customName: string, embeddedPrefixes: string[]): string {
+export class SnakeNamingStrategy
+  extends DefaultNamingStrategy
+  implements NamingStrategyInterface
+{
+  columnName(
+    propertyName: string,
+    customName: string,
+    embeddedPrefixes: string[],
+  ): string {
     const name = customName || propertyName;
     if (embeddedPrefixes.length) {
       return snakeCase(embeddedPrefixes.join('_')) + '_' + snakeCase(name);
@@ -26,7 +33,11 @@ export class SnakeNamingStrategy extends DefaultNamingStrategy implements Naming
     return snakeCase(firstTableName + '_' + firstPropertyName);
   }
 
-  joinTableColumnName(tableName: string, propertyName: string, columnName: string): string {
+  joinTableColumnName(
+    tableName: string,
+    propertyName: string,
+    columnName: string,
+  ): string {
     return snakeCase(tableName + '_' + (columnName || propertyName));
   }
 
