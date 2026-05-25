@@ -1,98 +1,174 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# NatVape Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+**Backend for NatVape vape shop. Telegram Mini App.**
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+[![NestJS](https://img.shields.io/badge/NestJS-11.x-E0234E?logo=nestjs)](https://nestjs.com)
+[![TypeORM](https://img.shields.io/badge/TypeORM-1.x-FE2C55?logo=typeorm)](https://typeorm.io)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql)](https://postgresql.org)
+[![JWT](https://img.shields.io/badge/JWT-black?logo=jsonwebtoken)](https://jwt.io)
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Stack
 
-## Project setup
+- **NestJS 11** — framework
+- **TypeORM** — ORM with custom `SnakeNamingStrategy`
+- **PostgreSQL** — database
+- **JWT + Passport** — authentication
+- **bcrypt** — password hashing
+- **class-validator / class-transformer** — DTO validation
+- **Telegraf / nestjs-telegraf** — Telegram Bot (planned)
 
-```bash
-$ npm install
-```
+---
 
-## Compile and run the project
+## Features
 
-```bash
-# development
-$ npm run start
+- Registration / login with JWT (access token, 7 days)
+- Products: pagination, filters (category, price, brand, search), sorting, brand list
+- Categories with product count
+- Cart with unique constraint `(user + product + variant)`
+- Wishlist
+- Orders: create from cart, stock decrement, item snapshots
+- Profile with order history and total spent
+- Saved delivery addresses
+- Snake-case in DB (`user_id`), camelCase in code (`userId`)
 
-# watch mode
-$ npm run start:dev
+---
 
-# production mode
-$ npm run start:prod
-```
-
-## Run tests
+## Quick Start
 
 ```bash
-# unit tests
-$ npm run test
+# 1. Install dependencies
+npm install
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+# 2. Create .env
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_NAME=natvape
+JWT_SECRET=your_secret_key
+```
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+# 3. Seed the database with test data
+npm run seed
+
+# 4. Start dev server
+npm run start:dev
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Server starts at **http://localhost:3000**.
+CORS is configured for **http://localhost:5173** (Vite frontend).
 
-## Resources
+---
 
-Check out a few resources that may come in handy when working with NestJS:
+## API Endpoints
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+All protected routes require the header:
+```
+Authorization: Bearer <token>
+```
 
-## Support
+### Public
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/api/auth/register` | Register a new user |
+| POST | `/api/auth/login` | Login, returns `accessToken` |
+| POST | `/api/auth/logout` | Logout (no-op) |
+| GET | `/api/categories` | List categories with `productCount` |
+| GET | `/api/products` | List products with filters & pagination |
+| GET | `/api/products/:id` | Product details |
+| GET | `/api/products/brands` | List brands |
 
-## Stay in touch
+### JWT Required
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/cart` | Get user cart |
+| POST | `/api/cart` | Add item to cart |
+| PATCH | `/api/cart/:itemId` | Update item quantity |
+| DELETE | `/api/cart/:itemId` | Remove item from cart |
+| DELETE | `/api/cart` | Clear cart |
+| GET | `/api/wishlist` | Get wishlist `productIds` |
+| POST | `/api/wishlist` | Add to wishlist |
+| DELETE | `/api/wishlist/:productId` | Remove from wishlist |
+| POST | `/api/orders` | Create order from cart |
+| GET | `/api/orders` | List user orders |
+| GET | `/api/orders/:id` | Order details |
+| GET | `/api/profile` | Profile with `totalSpent` and `ordersCount` |
+| PATCH | `/api/profile` | Update `name`, `phone`, `avatar` |
+| GET | `/api/addresses` | List saved addresses |
+| POST | `/api/addresses` | Add address |
+| DELETE | `/api/addresses/:id` | Delete address |
 
-## License
+---
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## Telegram Bot (planned)
+
+Module based on `nestjs-telegraf`:
+- Automatic admin notifications on new orders
+- Commands: `/orders` (recent orders), `/stats` (total revenue)
+
+```bash
+npm install nestjs-telegraf telegraf
+```
+
+```env
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_ADMIN_CHAT_ID=...
+```
+
+---
+
+## Project Structure
+
+```
+src/
+├── auth/          # JWT auth + Passport strategy
+├── users/         # User service
+├── categories/    # Product categories
+├── products/      # Products, variants, colors
+├── cart/          # Shopping cart
+├── wishlist/      # Wishlist
+├── orders/        # Orders + OrderItems
+├── profile/       # User profile
+├── addresses/     # Delivery addresses
+├── common/        # JwtAuthGuard, CurrentUser decorator, ExceptionFilter, SnakeNamingStrategy
+├── data/          # Seed data (25 products, 6 categories)
+├── seed.ts        # Database seed script
+└── main.ts        # Entry point
+```
+
+---
+
+## Database
+
+All tables use `snake_case` naming.
+
+| Table | Purpose |
+|-------|---------|
+| `users` | Users |
+| `categories` | Categories (`liquids`, `coils`, …) |
+| `products` | Products |
+| `product_variants` | Variants (flavors, strength) |
+| `product_colors` | Colors |
+| `cart_items` | Cart |
+| `wishlist_items` | Wishlist |
+| `orders` | Orders |
+| `order_items` | Order line items (snapshot) |
+| `addresses` | Delivery addresses |
+
+---
+
+## Test User
+
+- **Email:** `max@natvape.ru`
+- **Password:** `password123`
+- **Phone:** `+375291234567`
+
+After `npm run seed` the database also contains 6 categories, 25 products with variants, 3 addresses, and 3 sample orders.
