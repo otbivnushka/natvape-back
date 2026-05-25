@@ -1,0 +1,66 @@
+import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { User } from '../users/entities/user.entity';
+import { UsersService } from '../users/users.service';
+import { OrdersService } from '../orders/orders.service';
+import { AddressesService } from '../addresses/addresses.service';
+import { IsString, IsOptional, MinLength } from 'class-validator';
+
+class UpdateProfileDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  avatar?: string;
+}
+
+@Controller('api/profile')
+@UseGuards(JwtAuthGuard)
+export class ProfileController {
+  constructor(
+    private usersService: UsersService,
+    private ordersService: OrdersService,
+    private addressesService: AddressesService,
+  ) {}
+
+  @Get()
+  async getProfile(@CurrentUser() user: User) {
+    const orders = await this.ordersService.findAll(user.id);
+    const addresses = await this.addressesService.findAll(user.id);
+    const totalSpent = orders.reduce((sum, o) => sum + o.total, 0);
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      phone: user.phone,
+      addresses,
+      totalSpent,
+      ordersCount: orders.length,
+    };
+  }
+
+  @Patch()
+  async updateProfile(
+    @CurrentUser() user: User,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    const updated = await this.usersService.update(user.id, dto);
+    return {
+      id: updated!.id,
+      name: updated!.name,
+      email: updated!.email,
+      avatar: updated!.avatar,
+      phone: updated!.phone,
+    };
+  }
+}
