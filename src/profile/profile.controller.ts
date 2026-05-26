@@ -1,4 +1,5 @@
 import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
@@ -22,6 +23,8 @@ class UpdateProfileDto {
   avatar?: string;
 }
 
+@ApiTags('Profile')
+@ApiBearerAuth()
 @Controller('api/profile')
 @UseGuards(JwtAuthGuard)
 export class ProfileController {
@@ -32,6 +35,9 @@ export class ProfileController {
   ) {}
 
   @Get()
+  @ApiOperation({
+    summary: 'Get current user profile with stats and addresses',
+  })
   async getProfile(@CurrentUser() user: User) {
     const orders = await this.ordersService.findAll(user.id);
     const addresses = await this.addressesService.findAll(user.id);
@@ -51,6 +57,7 @@ export class ProfileController {
   }
 
   @Patch()
+  @ApiOperation({ summary: 'Update profile (name, phone, avatar)' })
   async updateProfile(
     @CurrentUser() user: User,
     @Body() dto: UpdateProfileDto,

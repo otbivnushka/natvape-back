@@ -35,6 +35,7 @@ export class ProductsService {
 
     if (query.category) {
       qb.andWhere('category.key = :category', { category: query.category });
+      qb.andWhere('product.visible = :visible', { visible: true });
     }
 
     if (query.search) {
@@ -93,6 +94,7 @@ export class ProductsService {
         badge: item.badge,
         brand: item.brand,
         variantLabel: item.variantLabel,
+        visible: item.visible,
         variants:
           item.variants?.map((v) => ({
             name: v.name,
@@ -138,14 +140,17 @@ export class ProductsService {
       badge: product.badge,
       brand: product.brand,
       variantLabel: product.variantLabel,
+      visible: product.visible,
       variants:
         product.variants?.map((v) => ({
+          id: v.id,
           name: v.name,
           value: v.value,
           stock: v.stock,
         })) || [],
       colors:
         product.colors?.map((c) => ({
+          id: c.id,
           name: c.name,
           hex: c.hex,
           stock: c.stock,

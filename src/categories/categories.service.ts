@@ -19,7 +19,7 @@ export class CategoriesService {
       id: cat.id,
       key: cat.key,
       label: cat.label,
-      productCount: cat.products?.length || 0,
+      productCount: cat.products?.filter((p) => p.visible).length || 0,
     }));
   }
 }

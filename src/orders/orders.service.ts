@@ -36,6 +36,17 @@ export class OrdersService {
     return `${this.baseUrl}/api/images/${image.filename}`;
   }
 
+  private calcItemTotal(
+    qty: number,
+    price: number,
+    doublePrice: number | null,
+  ): number {
+    if (!doublePrice) return qty * price;
+    const pairs = Math.floor(qty / 2);
+    const remainder = qty % 2;
+    return pairs * doublePrice + remainder * price;
+  }
+
   async create(userId: number, dto: CreateOrderDto) {
     const cartItems = await this.cartRepository.find({
       where: { userId },
@@ -54,7 +65,13 @@ export class OrdersService {
     }
 
     const total = cartItems.reduce(
-      (sum, item) => sum + item.quantity * Number(item.product.price),
+      (sum, item) =>
+        sum +
+        this.calcItemTotal(
+          item.quantity,
+          Number(item.product.price),
+          item.product.doublePrice ? Number(item.product.doublePrice) : null,
+        ),
       0,
     );
 
@@ -93,12 +110,23 @@ export class OrdersService {
         const variant = item.product.variants?.find(
           (v) => v.value === item.variantKey,
         );
+        const color = item.product.colors?.find(
+          (c) => c.name === item.variantKey,
+        );
         if (variant) {
           await this.dataSource
             .createQueryBuilder()
             .update('product_variants')
             .set({ stock: () => `GREATEST(0, stock - ${item.quantity})` })
             .where('id = :id', { id: variant.id })
+            .execute();
+        }
+        if (color) {
+          await this.dataSource
+            .createQueryBuilder()
+            .update('product_colors')
+            .set({ stock: () => `GREATEST(0, stock - ${item.quantity})` })
+            .where('id = :id', { id: color.id })
             .execute();
         }
       }

@@ -9,6 +9,7 @@ import {
   Param,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
 import { AdminService } from './admin.service';
@@ -22,27 +23,33 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
+@ApiTags('Admin')
+@ApiBearerAuth()
 @Controller('api/admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminController {
   constructor(private adminService: AdminService) {}
 
   @Post('products')
+  @ApiOperation({ summary: 'Create product with variants and colors' })
   async createProduct(@Body() dto: CreateProductDto) {
     return this.adminService.createProduct(dto);
   }
 
   @Put('products/:id')
+  @ApiOperation({ summary: 'Update product fields' })
   async updateProduct(@Param('id') id: string, @Body() dto: UpdateProductDto) {
     return this.adminService.updateProduct(+id, dto);
   }
 
   @Delete('products/:id')
+  @ApiOperation({ summary: 'Delete product' })
   async deleteProduct(@Param('id') id: string) {
     return this.adminService.deleteProduct(+id);
   }
 
   @Post('products/:id/variants')
+  @ApiOperation({ summary: 'Add variant to product' })
   async createVariant(
     @Param('id') productId: string,
     @Body() dto: CreateVariantDto,
@@ -51,6 +58,7 @@ export class AdminController {
   }
 
   @Patch('products/variants/:variantId')
+  @ApiOperation({ summary: 'Update variant (name, value, stock)' })
   async updateVariant(
     @Param('variantId') variantId: string,
     @Body() dto: UpdateVariantDto,
@@ -59,11 +67,13 @@ export class AdminController {
   }
 
   @Delete('products/variants/:variantId')
+  @ApiOperation({ summary: 'Delete variant' })
   async deleteVariant(@Param('variantId') variantId: string) {
     return this.adminService.deleteVariant(+variantId);
   }
 
   @Post('products/:id/colors')
+  @ApiOperation({ summary: 'Add color to product' })
   async createColor(
     @Param('id') productId: string,
     @Body() dto: CreateColorDto,
@@ -72,6 +82,7 @@ export class AdminController {
   }
 
   @Patch('products/colors/:colorId')
+  @ApiOperation({ summary: 'Update color (name, hex, stock)' })
   async updateColor(
     @Param('colorId') colorId: string,
     @Body() dto: UpdateColorDto,
@@ -80,16 +91,19 @@ export class AdminController {
   }
 
   @Delete('products/colors/:colorId')
+  @ApiOperation({ summary: 'Delete color' })
   async deleteColor(@Param('colorId') colorId: string) {
     return this.adminService.deleteColor(+colorId);
   }
 
   @Post('categories')
+  @ApiOperation({ summary: 'Create category' })
   async createCategory(@Body() dto: CreateCategoryDto) {
     return this.adminService.createCategory(dto);
   }
 
   @Put('categories/:id')
+  @ApiOperation({ summary: 'Update category' })
   async updateCategory(
     @Param('id') id: string,
     @Body() dto: UpdateCategoryDto,
@@ -98,21 +112,25 @@ export class AdminController {
   }
 
   @Delete('categories/:id')
+  @ApiOperation({ summary: 'Delete category' })
   async deleteCategory(@Param('id') id: string) {
     return this.adminService.deleteCategory(+id);
   }
 
   @Get('orders')
+  @ApiOperation({ summary: 'Get all orders (admin)' })
   async getAllOrders() {
     return this.adminService.getAllOrders();
   }
 
   @Get('orders/sent')
+  @ApiOperation({ summary: 'Get orders with status "sent"' })
   async getSentOrders() {
     return this.adminService.getSentOrders();
   }
 
   @Patch('orders/:id/status')
+  @ApiOperation({ summary: 'Update order status (sent → end)' })
   async updateOrderStatus(
     @Param('id') id: string,
     @Body() dto: UpdateOrderStatusDto,
@@ -121,6 +139,7 @@ export class AdminController {
   }
 
   @Delete('orders/:id')
+  @ApiOperation({ summary: 'Delete order' })
   async deleteOrder(@Param('id') id: string) {
     return this.adminService.deleteOrder(+id);
   }

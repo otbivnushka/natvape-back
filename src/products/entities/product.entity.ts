@@ -53,6 +53,9 @@ export class Product {
   @Column({ type: 'varchar', length: 50, nullable: true })
   variantLabel: string | null;
 
+  @Column({ default: true })
+  visible: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

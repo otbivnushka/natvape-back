@@ -29,6 +29,17 @@ export class CartService {
     return `${this.baseUrl}/api/images/${image.filename}`;
   }
 
+  private calcItemTotal(
+    qty: number,
+    price: number,
+    doublePrice: number | null,
+  ): number {
+    if (!doublePrice) return qty * price;
+    const pairs = Math.floor(qty / 2);
+    const remainder = qty % 2;
+    return pairs * doublePrice + remainder * price;
+  }
+
   private async getFullCart(userId: number) {
     const items = await this.cartRepository.find({
       where: { userId },
@@ -37,7 +48,13 @@ export class CartService {
 
     const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
     const subtotal = items.reduce(
-      (sum, item) => sum + item.quantity * Number(item.product.price),
+      (sum, item) =>
+        sum +
+        this.calcItemTotal(
+          item.quantity,
+          Number(item.product.price),
+          item.product.doublePrice ? Number(item.product.doublePrice) : null,
+        ),
       0,
     );
 
@@ -48,6 +65,9 @@ export class CartService {
           id: item.product.id,
           name: item.product.name,
           price: Number(item.product.price),
+          doublePrice: item.product.doublePrice
+            ? Number(item.product.doublePrice)
+            : null,
           image: this.resolveImageUrl(item.product.image),
           imageId: item.product.image?.id ?? null,
           category: item.product.category,
@@ -55,6 +75,11 @@ export class CartService {
           badge: item.product.badge,
         },
         quantity: item.quantity,
+        effectivePrice: this.calcItemTotal(
+          item.quantity,
+          Number(item.product.price),
+          item.product.doublePrice ? Number(item.product.doublePrice) : null,
+        ),
         variantKey: item.variantKey,
       })),
       totalItems,
