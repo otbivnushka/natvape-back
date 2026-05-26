@@ -30,6 +30,9 @@ export class User {
   @Column({ type: 'varchar', length: 500, nullable: true })
   avatar: string | null;
 
+  @Column({ default: false })
+  isAdmin: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

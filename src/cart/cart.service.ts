@@ -1,24 +1,38 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { CartItem } from './entities/cart-item.entity';
 import { Product } from '../products/entities/product.entity';
+import { Image } from '../images/entities/image.entity';
 import { AddToCartDto } from './dto/add-to-cart.dto';
 import { UpdateCartItemDto } from './dto/update-cart-item.dto';
 
 @Injectable()
 export class CartService {
+  private baseUrl: string;
+  private placeholder = 'https://placehold.co/600x600?text=Нет+изображения';
+
   constructor(
     @InjectRepository(CartItem)
     private cartRepository: Repository<CartItem>,
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    this.baseUrl =
+      this.configService.get<string>('BASE_URL') || 'http://localhost:3000';
+  }
+
+  private resolveImageUrl(image: Image | null): string {
+    if (!image) return this.placeholder;
+    return `${this.baseUrl}/api/images/${image.filename}`;
+  }
 
   private async getFullCart(userId: number) {
     const items = await this.cartRepository.find({
       where: { userId },
-      relations: { product: { category: true } },
+      relations: { product: { category: true, image: true } },
     });
 
     const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -34,7 +48,8 @@ export class CartService {
           id: item.product.id,
           name: item.product.name,
           price: Number(item.product.price),
-          image: item.product.image,
+          image: this.resolveImageUrl(item.product.image),
+          imageId: item.product.image?.id ?? null,
           category: item.product.category,
           brand: item.product.brand,
           badge: item.product.badge,

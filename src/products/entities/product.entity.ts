@@ -11,6 +11,7 @@ import {
 import { Category } from '../../categories/entities/category.entity';
 import { ProductVariant } from './product-variant.entity';
 import { ProductColor } from './product-color.entity';
+import { Image } from '../../images/entities/image.entity';
 
 @Entity('products')
 export class Product {
@@ -31,18 +32,19 @@ export class Product {
   price: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
-  oldPrice: number | null;
+  doublePrice: number | null;
 
   @Column({ type: 'decimal', precision: 2, scale: 1 })
   rating: number;
 
-  @Column({ length: 500 })
-  image: string;
+  @ManyToOne(() => Image, { onDelete: 'SET NULL' })
+  @JoinColumn()
+  image: Image | null;
 
   @Column({ type: 'text' })
   description: string;
 
-  @Column({ type: 'varchar', length: 10, nullable: true })
+  @Column({ type: 'varchar', length: 20, nullable: true })
   badge: string | null;
 
   @Column({ length: 100 })

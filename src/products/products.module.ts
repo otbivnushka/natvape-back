@@ -3,11 +3,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Product } from './entities/product.entity';
 import { ProductVariant } from './entities/product-variant.entity';
 import { ProductColor } from './entities/product-color.entity';
+import { Image } from '../images/entities/image.entity';
 import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Product, ProductVariant, ProductColor])],
+  imports: [
+    TypeOrmModule.forFeature([Product, ProductVariant, ProductColor, Image]),
+  ],
   controllers: [ProductsController],
   providers: [ProductsService],
   exports: [ProductsService],

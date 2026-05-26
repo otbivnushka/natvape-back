@@ -11,6 +11,8 @@ import { WishlistModule } from './wishlist/wishlist.module';
 import { OrdersModule } from './orders/orders.module';
 import { ProfileModule } from './profile/profile.module';
 import { AddressesModule } from './addresses/addresses.module';
+import { AdminModule } from './admin/admin.module';
+import { ImagesModule } from './images/images.module';
 
 @Module({
   imports: [
@@ -39,6 +41,8 @@ import { AddressesModule } from './addresses/addresses.module';
     OrdersModule,
     ProfileModule,
     AddressesModule,
+    AdminModule,
+    ImagesModule,
   ],
 })
 export class AppModule {}

@@ -43,6 +43,7 @@ export class ProfileController {
       email: user.email,
       avatar: user.avatar,
       phone: user.phone,
+      isAdmin: user.isAdmin,
       addresses,
       totalSpent,
       ordersCount: orders.length,

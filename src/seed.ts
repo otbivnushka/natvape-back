@@ -63,6 +63,7 @@ async function seed() {
       email: 'max@natvape.ru',
       password: hashedPassword,
       phone: '+375291234567',
+      isAdmin: true,
     });
 
     const address1 = await queryRunner.manager.save(Address, {
@@ -89,7 +90,7 @@ async function seed() {
     const savedOrder1 = await queryRunner.manager.save(Order, {
       userId: savedUser.id,
       total: 49,
-      status: 'delivered',
+      status: 'end',
       deliveryMethod: 'pickup',
       addressId: address1.id,
       deliveryTime: '14:00',
@@ -111,7 +112,7 @@ async function seed() {
     const savedOrder2 = await queryRunner.manager.save(Order, {
       userId: savedUser.id,
       total: 75,
-      status: 'shipping',
+      status: 'sent',
       deliveryMethod: 'delivery',
       comment: 'Позвонить перед выходом',
       addressId: address2.id,
@@ -133,7 +134,7 @@ async function seed() {
     const savedOrder3 = await queryRunner.manager.save(Order, {
       userId: savedUser.id,
       total: 159,
-      status: 'processing',
+      status: 'sent',
       deliveryMethod: 'pickup',
       addressId: address3.id,
       deliveryTime: '16:00',

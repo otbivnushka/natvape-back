@@ -1,20 +1,35 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
+import { Image } from '../images/entities/image.entity';
 import { QueryProductsDto } from './dto/query-products.dto';
 
 @Injectable()
 export class ProductsService {
+  private baseUrl: string;
+  private placeholder = 'https://placehold.co/600x600?text=Нет+изображения';
+
   constructor(
     @InjectRepository(Product)
     private productsRepository: Repository<Product>,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    this.baseUrl =
+      this.configService.get<string>('BASE_URL') || 'http://localhost:3000';
+  }
+
+  private resolveImageUrl(image: Image | null): string {
+    if (!image) return this.placeholder;
+    return `${this.baseUrl}/api/images/${image.filename}`;
+  }
 
   async findAll(query: QueryProductsDto) {
     const qb = this.productsRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.image', 'image')
       .leftJoinAndSelect('product.variants', 'variants')
       .leftJoinAndSelect('product.colors', 'colors');
 
@@ -71,9 +86,10 @@ export class ProductsService {
         name: item.name,
         category: item.category,
         price: Number(item.price),
-        oldPrice: item.oldPrice ? Number(item.oldPrice) : null,
+        doublePrice: item.doublePrice ? Number(item.doublePrice) : null,
         rating: Number(item.rating),
-        image: item.image,
+        image: this.resolveImageUrl(item.image),
+        imageId: item.image?.id ?? null,
         badge: item.badge,
         brand: item.brand,
         variantLabel: item.variantLabel,
@@ -102,7 +118,7 @@ export class ProductsService {
   async findById(id: number) {
     const product = await this.productsRepository.findOne({
       where: { id },
-      relations: { category: true, variants: true, colors: true },
+      relations: { category: true, image: true, variants: true, colors: true },
     });
 
     if (!product) {
@@ -114,9 +130,11 @@ export class ProductsService {
       name: product.name,
       category: product.category,
       price: Number(product.price),
-      oldPrice: product.oldPrice ? Number(product.oldPrice) : null,
+      doublePrice: product.doublePrice ? Number(product.doublePrice) : null,
       rating: Number(product.rating),
-      image: product.image,
+      image: this.resolveImageUrl(product.image),
+      imageId: product.image?.id ?? null,
+      description: product.description,
       badge: product.badge,
       brand: product.brand,
       variantLabel: product.variantLabel,
