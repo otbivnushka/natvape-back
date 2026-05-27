@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,6 +12,7 @@ import { OrderItem } from './entities/order-item.entity';
 import { CartItem } from '../cart/entities/cart-item.entity';
 import { Image } from '../images/entities/image.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class OrdersService {
@@ -26,6 +28,7 @@ export class OrdersService {
     private cartRepository: Repository<CartItem>,
     private dataSource: DataSource,
     private configService: ConfigService,
+    private usersService: UsersService,
   ) {
     this.baseUrl =
       this.configService.get<string>('BASE_URL') || 'http://localhost:3000';
@@ -36,14 +39,16 @@ export class OrdersService {
     return `${this.baseUrl}/api/images/${image.filename}`;
   }
 
-  private calcItemTotal(
-    qty: number,
-    price: number,
-    doublePrice: number | null,
-  ): number {
-    if (!doublePrice) return qty * price;
-    const pairs = Math.floor(qty / 2);
-    const remainder = qty % 2;
+  private calcGroupTotal(items: CartItem[]): number {
+    const totalQty = items.reduce((sum, i) => sum + i.quantity, 0);
+    const price = Number(items[0].product.price);
+    const doublePrice = items[0].product.doublePrice
+      ? Number(items[0].product.doublePrice)
+      : null;
+
+    if (!doublePrice) return totalQty * price;
+    const pairs = Math.floor(totalQty / 2);
+    const remainder = totalQty % 2;
     return pairs * doublePrice + remainder * price;
   }
 
@@ -64,14 +69,15 @@ export class OrdersService {
       throw new BadRequestException('Cart is empty');
     }
 
-    const total = cartItems.reduce(
-      (sum, item) =>
-        sum +
-        this.calcItemTotal(
-          item.quantity,
-          Number(item.product.price),
-          item.product.doublePrice ? Number(item.product.doublePrice) : null,
-        ),
+    const groups = new Map<number, CartItem[]>();
+    for (const item of cartItems) {
+      const arr = groups.get(item.productId) || [];
+      arr.push(item);
+      groups.set(item.productId, arr);
+    }
+
+    const total = Array.from(groups.values()).reduce(
+      (sum, group) => sum + this.calcGroupTotal(group),
       0,
     );
 
@@ -158,13 +164,26 @@ export class OrdersService {
   }
 
   async findById(userId: number, orderId: number) {
+    const user = await this.usersService.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
     const order = await this.ordersRepository.findOne({
-      where: { id: orderId, userId },
+      where: { id: orderId },
       relations: { items: true, address: true },
     });
 
     if (!order) {
       throw new NotFoundException('Order not found');
+    }
+    if (user.isAdmin) {
+      return order;
+    }
+
+    if (order?.userId !== user.id) {
+      throw new ForbiddenException('Access denied');
     }
 
     return order;

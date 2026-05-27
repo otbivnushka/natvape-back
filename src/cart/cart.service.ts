@@ -40,6 +40,19 @@ export class CartService {
     return pairs * doublePrice + remainder * price;
   }
 
+  private calcGroupTotal(items: CartItem[]): number {
+    const totalQty = items.reduce((sum, i) => sum + i.quantity, 0);
+    const price = Number(items[0].product.price);
+    const doublePrice = items[0].product.doublePrice
+      ? Number(items[0].product.doublePrice)
+      : null;
+
+    if (!doublePrice) return totalQty * price;
+    const pairs = Math.floor(totalQty / 2);
+    const remainder = totalQty % 2;
+    return pairs * doublePrice + remainder * price;
+  }
+
   private async getFullCart(userId: number) {
     const items = await this.cartRepository.find({
       where: { userId },
@@ -47,14 +60,16 @@ export class CartService {
     });
 
     const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-    const subtotal = items.reduce(
-      (sum, item) =>
-        sum +
-        this.calcItemTotal(
-          item.quantity,
-          Number(item.product.price),
-          item.product.doublePrice ? Number(item.product.doublePrice) : null,
-        ),
+
+    const groups = new Map<number, CartItem[]>();
+    for (const item of items) {
+      const arr = groups.get(item.productId) || [];
+      arr.push(item);
+      groups.set(item.productId, arr);
+    }
+
+    const subtotal = Array.from(groups.values()).reduce(
+      (sum, group) => sum + this.calcGroupTotal(group),
       0,
     );
 
