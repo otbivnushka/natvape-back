@@ -62,6 +62,10 @@ export class AuthService {
             .join(' ')
             .trim() || 'User',
       });
+    } else if (!user.telegramUsername && tgUser.username) {
+      await this.usersService.update(user.id, {
+        telegramUsername: tgUser.username,
+      });
     }
 
     const accessToken = this.jwtService.sign({ sub: user.id });

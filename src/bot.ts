@@ -86,6 +86,18 @@ export function startBot(app: INestApplication) {
     })();
   });
 
+  bot.onText(/Рассылка/, (msg) => {
+    void (async () => {
+      const user = await usersService.findByTelegramId(msg.chat.id);
+      if (!isAdmin(user)) return;
+      mailingState.set(msg.chat.id, { step: 'awaiting_image' });
+      await bot.sendMessage(
+        msg.chat.id,
+        'Отправь изображение для рассылки (или просто текст, чтобы начать без картинки)',
+      );
+    })();
+  });
+
   bot.on('photo', (msg) => {
     void (async () => {
       const state = mailingState.get(msg.chat.id);
@@ -104,13 +116,38 @@ export function startBot(app: INestApplication) {
     void (async () => {
       if (!msg.text) return;
       const state = mailingState.get(msg.chat.id);
-      if (!state || state.step !== 'awaiting_text') return;
-      const allUsers = await usersService.findAll();
-      mailingState.delete(msg.chat.id);
+      if (!state) return;
+
       if (msg.text.toLowerCase() === 'отмена') {
+        mailingState.delete(msg.chat.id);
         await bot.sendMessage(msg.chat.id, 'Рассылка отменена');
         return;
       }
+
+      if (state.step === 'awaiting_image') {
+        const allUsers = await usersService.findAll();
+        mailingState.delete(msg.chat.id);
+        let success = 0;
+        let failed = 0;
+        for (const u of allUsers) {
+          try {
+            await bot.sendMessage(Number(u.telegramId), msg.text);
+            success++;
+          } catch {
+            failed++;
+          }
+        }
+        await bot.sendMessage(
+          msg.chat.id,
+          `Отправлено успешно: ${success}\nНе отправлено: ${failed}`,
+        );
+        return;
+      }
+
+      if (state.step !== 'awaiting_text') return;
+
+      const allUsers = await usersService.findAll();
+      mailingState.delete(msg.chat.id);
 
       let success = 0;
       let failed = 0;
