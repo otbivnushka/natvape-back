@@ -25,7 +25,7 @@ export class ProductsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get product by ID' })
-  async findById(@Param('id') id: string) {
-    return this.productsService.findById(+id);
+  async findById(@Param('id') id: string, @Query('userId') userId?: string) {
+    return this.productsService.findById(+id, userId);
   }
 }

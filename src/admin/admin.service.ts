@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Product } from '../products/entities/product.entity';
 import { ProductVariant } from '../products/entities/product-variant.entity';
 import { ProductColor } from '../products/entities/product-color.entity';
@@ -17,6 +17,7 @@ import { UpdateColorDto } from './dto/update-color.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { User } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class AdminService {
@@ -35,6 +36,9 @@ export class AdminService {
     private orderItemRepository: Repository<OrderItem>,
     @InjectRepository(Image)
     private imagesRepository: Repository<Image>,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
+    private dataSource: DataSource,
   ) {}
 
   async createProduct(dto: CreateProductDto) {
@@ -165,6 +169,14 @@ export class AdminService {
     });
   }
 
+  async getAllOrdersByUserId(userId: number) {
+    return this.ordersRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      relations: { items: true, address: true, user: true },
+    });
+  }
+
   async getSentOrders() {
     return this.ordersRepository.find({
       where: { status: 'sent' },
@@ -182,9 +194,52 @@ export class AdminService {
   }
 
   async deleteOrder(id: number) {
-    const order = await this.ordersRepository.findOneBy({ id });
+    const order = await this.ordersRepository.findOne({
+      where: { id },
+      relations: { items: true },
+    });
     if (!order) throw new NotFoundException('Order not found');
 
+    for (const item of order.items) {
+      if (!item.variantKey) continue;
+
+      await this.dataSource
+        .createQueryBuilder()
+        .update('product_variants')
+        .set({ stock: () => `stock + ${item.quantity}` })
+        .where('product_id = :pid AND value = :val', {
+          pid: item.productId,
+          val: item.variantKey,
+        })
+        .execute();
+
+      await this.dataSource
+        .createQueryBuilder()
+        .update('product_colors')
+        .set({ stock: () => `stock + ${item.quantity}` })
+        .where('product_id = :pid AND name = :val', {
+          pid: item.productId,
+          val: item.variantKey,
+        })
+        .execute();
+    }
+
     await this.ordersRepository.remove(order);
+  }
+
+  async makeAdmin(telegramUsername: string) {
+    const user = await this.usersRepository.findOneBy({ telegramUsername });
+    if (!user) return new NotFoundException('User not found');
+
+    user.isAdmin = true;
+    return this.usersRepository.save(user);
+  }
+
+  async removeAdmin(telegramUsername: string) {
+    const user = await this.usersRepository.findOneBy({ telegramUsername });
+    if (!user) return new NotFoundException('User not found');
+
+    user.isAdmin = false;
+    return this.usersRepository.save(user);
   }
 }

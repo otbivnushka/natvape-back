@@ -1,51 +1,77 @@
-import {
-  Injectable,
-  ConflictException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+import { validate, parse } from '@telegram-apps/init-data-node';
 import { UsersService } from '../users/users.service';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
+import { TelegramAuthDto } from './dto/telegram-auth.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly botToken: string;
+
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-  ) {}
-
-  async register(dto: RegisterDto) {
-    const existing = await this.usersService.findByEmail(dto.email);
-    if (existing) {
-      throw new ConflictException('Email already exists');
-    }
-
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
-    const user = await this.usersService.create({
-      ...dto,
-      password: hashedPassword,
-    });
-
-    const { password: _, ...result } = user;
-    return result;
+    configService: ConfigService,
+  ) {
+    this.botToken = configService.get<string>('BOT_TOKEN', '');
   }
 
-  async login(dto: LoginDto) {
-    const user = await this.usersService.findByEmail(dto.email);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+  async telegramAuth(dto: TelegramAuthDto) {
+    if (!this.botToken) {
+      throw new UnauthorizedException('BOT_TOKEN not configured');
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+    let parsed: Record<string, unknown>;
+    try {
+      validate(dto.initData, this.botToken);
+      parsed = parse(dto.initData);
+    } catch {
+      throw new UnauthorizedException('Invalid Telegram data');
+    }
+
+    const authDate = new Date(parsed.authDate as string).getTime();
+    const now = Date.now();
+    const oneHour = 60 * 60 * 1000;
+    if (now - authDate > oneHour) {
+      throw new UnauthorizedException('Auth data expired');
+    }
+
+    const tgUser = parsed.user as
+      | {
+          id: number;
+          firstName?: string;
+          lastName?: string;
+          username?: string;
+        }
+      | undefined;
+
+    if (!tgUser) {
+      throw new UnauthorizedException('No user data in initData');
+    }
+
+    let user = await this.usersService.findByTelegramId(tgUser.id);
+
+    if (!user) {
+      user = await this.usersService.create({
+        telegramId: tgUser.id,
+        telegramUsername: tgUser.username ?? null,
+        name:
+          [tgUser.firstName, tgUser.lastName]
+            .filter(Boolean)
+            .join(' ')
+            .trim() || 'User',
+      });
     }
 
     const accessToken = this.jwtService.sign({ sub: user.id });
 
-    const { password: _, ...userWithoutPassword } = user;
-    return { accessToken, user: userWithoutPassword };
+    const {
+      cartItems: _cartItems,
+      wishlistItems: _wishlistItems,
+      orders: _orders,
+      ...safeUser
+    } = user;
+    return { accessToken, user: safeUser };
   }
 }

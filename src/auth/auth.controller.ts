@@ -1,31 +1,17 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
+import { TelegramAuthDto } from './dto/telegram-auth.dto';
 
 @ApiTags('Auth')
 @Controller('api/auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Post('register')
-  @ApiOperation({ summary: 'Register a new user' })
-  async register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
-  }
-
-  @Post('login')
+  @Post('telegram')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Login and get JWT token' })
-  async login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
-  }
-
-  @Post('logout')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Logout (no-op on backend)' })
-  logout() {
-    return { message: 'Logged out' };
+  @ApiOperation({ summary: 'Authenticate via Telegram Mini App' })
+  async telegramAuth(@Body() dto: TelegramAuthDto) {
+    return this.authService.telegramAuth(dto);
   }
 }

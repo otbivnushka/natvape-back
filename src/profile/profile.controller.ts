@@ -13,14 +13,6 @@ class UpdateProfileDto {
   @IsString()
   @MinLength(2)
   name?: string;
-
-  @IsOptional()
-  @IsString()
-  phone?: string;
-
-  @IsOptional()
-  @IsString()
-  avatar?: string;
 }
 
 @ApiTags('Profile')
@@ -46,10 +38,8 @@ export class ProfileController {
     return {
       id: user.id,
       name: user.name,
-      email: user.email,
-      avatar: user.avatar,
-      phone: user.phone,
       isAdmin: user.isAdmin,
+      telegramUsername: user.telegramUsername,
       addresses,
       totalSpent,
       ordersCount: orders.length,
@@ -66,9 +56,6 @@ export class ProfileController {
     return {
       id: updated!.id,
       name: updated!.name,
-      email: updated!.email,
-      avatar: updated!.avatar,
-      phone: updated!.phone,
     };
   }
 }

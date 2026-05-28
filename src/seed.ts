@@ -1,3 +1,4 @@
+import { Client } from 'pg';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DataSource } from 'typeorm';
@@ -10,9 +11,29 @@ import { Address } from './addresses/entities/address.entity';
 import { Order } from './orders/entities/order.entity';
 import { OrderItem } from './orders/entities/order-item.entity';
 import { categoriesData, productsData } from './data/products';
-import * as bcrypt from 'bcrypt';
+
+async function dropAllTables() {
+  const client = new Client({
+    host: process.env.DB_HOST || 'localhost',
+    port: Number(process.env.DB_PORT) || 5432,
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || 'postgres',
+    database: process.env.DB_NAME || 'natvape',
+  });
+  await client.connect();
+  await client.query(`
+    DROP TABLE IF EXISTS
+      cart_items, wishlist_items, order_items, orders, addresses,
+      product_variants, product_colors, products, categories, users,
+      images
+    CASCADE
+  `);
+  await client.end();
+}
 
 async function seed() {
+  await dropAllTables();
+
   const app = await NestFactory.create(AppModule);
   const dataSource = app.get(DataSource);
 
@@ -21,10 +42,6 @@ async function seed() {
 
   try {
     await queryRunner.startTransaction();
-
-    await queryRunner.query(
-      'TRUNCATE TABLE cart_items, wishlist_items, order_items, orders, addresses, product_variants, product_colors, products, categories, users CASCADE',
-    );
 
     const categoryMap = new Map<string, Category>();
     for (const catData of categoriesData) {
@@ -57,12 +74,10 @@ async function seed() {
       }
     }
 
-    const hashedPassword = await bcrypt.hash('password123', 10);
     const savedUser = await queryRunner.manager.save(User, {
       name: 'Максим Волков',
-      email: 'max@natvape.ru',
-      password: hashedPassword,
-      phone: '+375291234567',
+      telegramId: 123456789,
+      telegramUsername: 'maxvolkov',
       isAdmin: true,
     });
 

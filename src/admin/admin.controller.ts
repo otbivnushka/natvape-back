@@ -123,6 +123,12 @@ export class AdminController {
     return this.adminService.getAllOrders();
   }
 
+  @Get('orders/user/:userId')
+  @ApiOperation({ summary: 'Get all orders from user (admin)' })
+  async getAllOrdersByUserId(@Param('userId') userId: string) {
+    return this.adminService.getAllOrdersByUserId(+userId);
+  }
+
   @Get('orders/sent')
   @ApiOperation({ summary: 'Get orders with status "sent"' })
   async getSentOrders() {

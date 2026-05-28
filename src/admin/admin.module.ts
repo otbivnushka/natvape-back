@@ -9,6 +9,7 @@ import { OrderItem } from '../orders/entities/order-item.entity';
 import { Image } from '../images/entities/image.entity';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
+import { User } from 'src/users/entities/user.entity';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { AdminService } from './admin.service';
       Order,
       OrderItem,
       Image,
+      User,
     ]),
   ],
   controllers: [AdminController],

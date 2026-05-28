@@ -14,8 +14,20 @@ export class UsersService {
     return this.usersRepository.findOne({ where: { id } });
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { email } });
+  async findByTelegramId(telegramId: number): Promise<User | null> {
+    return this.usersRepository.findOne({ where: { telegramId } });
+  }
+
+  async findByTelegramUsername(telegramUsername: string): Promise<User | null> {
+    return this.usersRepository.findOne({ where: { telegramUsername } });
+  }
+
+  async findAllAdmins(): Promise<User[]> {
+    return this.usersRepository.find({ where: { isAdmin: true } });
+  }
+
+  async findAll(): Promise<User[]> {
+    return this.usersRepository.find();
   }
 
   async create(data: Partial<User>): Promise<User> {

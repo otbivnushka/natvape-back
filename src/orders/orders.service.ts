@@ -12,7 +12,9 @@ import { OrderItem } from './entities/order-item.entity';
 import { CartItem } from '../cart/entities/cart-item.entity';
 import { Image } from '../images/entities/image.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { UsersService } from 'src/users/users.service';
+import { UsersService } from '../users/users.service';
+import { sendTelegramMessage } from '../utils/sendTelegramMessage';
+import { buildOrderMessage } from '../utils/buildOrderMessage';
 
 @Injectable()
 export class OrdersService {
@@ -140,10 +142,20 @@ export class OrdersService {
 
     await this.cartRepository.delete({ userId });
 
-    return this.ordersRepository.findOne({
+    const returnOrder = await this.ordersRepository.findOne({
       where: { id: savedOrder.id },
-      relations: { items: true, address: true },
+      relations: { items: true, address: true, user: true },
     });
+
+    const admins = await this.usersService.findAllAdmins();
+    for (const admin of admins) {
+      await sendTelegramMessage(
+        admin.telegramId,
+        buildOrderMessage(returnOrder!),
+      );
+    }
+
+    return returnOrder;
   }
 
   async findAll(userId: number) {
@@ -172,7 +184,7 @@ export class OrdersService {
 
     const order = await this.ordersRepository.findOne({
       where: { id: orderId },
-      relations: { items: true, address: true },
+      relations: { items: true, address: true, user: true },
     });
 
     if (!order) {

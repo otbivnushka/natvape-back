@@ -15,20 +15,14 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ type: 'bigint', unique: true })
+  telegramId: number;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  telegramUsername: string | null;
+
   @Column({ length: 100 })
   name: string;
-
-  @Column({ length: 255, unique: true })
-  email: string;
-
-  @Column({ length: 255 })
-  password: string;
-
-  @Column({ type: 'varchar', length: 20, nullable: true })
-  phone: string | null;
-
-  @Column({ type: 'varchar', length: 500, nullable: true })
-  avatar: string | null;
 
   @Column({ default: false })
   isAdmin: boolean;

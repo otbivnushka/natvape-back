@@ -2,21 +2,40 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { startBot } from './bot';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const appContext = await NestFactory.createApplicationContext(AppModule);
+  const configService = appContext.get(ConfigService);
+  await appContext.close();
+
+  const httpsOptions = {
+    cert: readFileSync(
+      join(
+        process.cwd(),
+        configService.get('SSL_CERT', './mini-app.local.pem'),
+      ),
+    ),
+    key: readFileSync(
+      join(
+        process.cwd(),
+        configService.get('SSL_KEY', './mini-app.local-key.pem'),
+      ),
+    ),
+  };
+
+  const app = await NestFactory.create(AppModule, { httpsOptions });
 
   app.enableCors({
-    origin: [
-      'http://localhost:5173',
-      'http://127.0.0.1:5173',
-      'http://localhost:3000',
-    ],
+    origin: true,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   app.useGlobalPipes(
@@ -38,7 +57,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);
 
-  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
+  await app.listen(configService.get('PORT', 443), '0.0.0.0');
 
   const dataSource = app.get(DataSource);
   const sqlPath = join(
@@ -50,5 +69,7 @@ async function bootstrap() {
   );
   const sql = readFileSync(sqlPath, 'utf8');
   await dataSource.query(sql);
+
+  startBot(app);
 }
 void bootstrap();

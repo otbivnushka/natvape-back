@@ -117,7 +117,7 @@ export class ProductsService {
     };
   }
 
-  async findById(id: number) {
+  async findById(id: number, userId?: number) {
     const product = await this.productsRepository.findOne({
       where: { id },
       relations: { category: true, image: true, variants: true, colors: true },
