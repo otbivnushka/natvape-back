@@ -40,6 +40,11 @@ export class QueryProductsDto {
   @Type(() => Number)
   @IsNumber()
   @Min(1)
-  @Max(100)
-  limit?: number = 20;
+  @Max(999)
+  limit?: number = 999;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  userId?: number;
 }

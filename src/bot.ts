@@ -141,6 +141,10 @@ export function startBot(app: INestApplication) {
       const user = await usersService.findByTelegramId(msg.chat.id);
       if (!isAdmin(user)) return;
       const orders = await adminService.getSentOrders();
+      if (!orders.length) {
+        await bot.sendMessage(msg.chat.id, 'Нет заказов');
+        return;
+      }
       for (const order of orders) {
         await sendOrderMessageWithButtons(bot, webAppUrl, msg.chat.id, order);
       }
@@ -216,7 +220,7 @@ async function checkAllOrders(
     await bot.sendMessage(query.message!.chat.id, 'Нет заказов');
     return;
   }
-  const lines: string[] = ['Все заказы:', ''];
+  const lines: string[] = [`Все заказы (заказов ${orders.length}):`, ''];
   for (const order of orders) {
     lines.push(`Заказ #${order.id} — ${Number(order.total)} руб`);
     for (const item of order.items) {

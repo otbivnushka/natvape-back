@@ -10,6 +10,7 @@ export class ProductsController {
 
   @Get()
   @ApiOperation({ summary: 'Get all products with filters and pagination' })
+  @ApiQuery({ name: 'userId', required: false, type: Number })
   async findAll(@Query() query: QueryProductsDto) {
     return this.productsService.findAll(query);
   }
@@ -25,7 +26,8 @@ export class ProductsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get product by ID' })
+  @ApiQuery({ name: 'userId', required: false, type: Number })
   async findById(@Param('id') id: string, @Query('userId') userId?: string) {
-    return this.productsService.findById(+id, userId);
+    return this.productsService.findById(+id, userId ? +userId : undefined);
   }
 }

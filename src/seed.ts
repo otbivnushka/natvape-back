@@ -25,7 +25,7 @@ async function dropAllTables() {
     DROP TABLE IF EXISTS
       cart_items, wishlist_items, order_items, orders, addresses,
       product_variants, product_colors, products, categories, users,
-      images
+      images, rates
     CASCADE
   `);
   await client.end();

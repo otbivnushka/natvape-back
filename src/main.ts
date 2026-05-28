@@ -60,15 +60,26 @@ async function bootstrap() {
   await app.listen(configService.get('PORT', 443), '0.0.0.0');
 
   const dataSource = app.get(DataSource);
-  const sqlPath = join(
+
+  const visibleSqlPath = join(
     process.cwd(),
     'src',
     'database',
     'triggers',
     'update_product_visible.sql',
   );
-  const sql = readFileSync(sqlPath, 'utf8');
-  await dataSource.query(sql);
+  const visibleSql = readFileSync(visibleSqlPath, 'utf8');
+  await dataSource.query(visibleSql);
+
+  const ratingSqlPath = join(
+    process.cwd(),
+    'src',
+    'database',
+    'triggers',
+    'update_product_rating.sql',
+  );
+  const ratingSql = readFileSync(ratingSqlPath, 'utf8');
+  await dataSource.query(ratingSql);
 
   startBot(app);
 }

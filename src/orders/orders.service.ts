@@ -104,7 +104,10 @@ export class OrdersService {
         variantKey: item.variantKey,
         variantName: item.variantKey
           ? (item.product.variants?.find((v) => v.value === item.variantKey)
-              ?.name ?? null)
+              ?.name ??
+            item.product.colors?.find((v) => v.name === item.variantKey)
+              ?.name ??
+            null)
           : null,
         quantity: item.quantity,
         price: Number(item.product.price),

@@ -17,7 +17,7 @@ import { UpdateColorDto } from './dto/update-color.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
-import { User } from 'src/users/entities/user.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class AdminService {

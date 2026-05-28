@@ -34,7 +34,7 @@ export class Product {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   doublePrice: number | null;
 
-  @Column({ type: 'decimal', precision: 2, scale: 1 })
+  @Column({ type: 'decimal', precision: 2, scale: 1, default: 0 })
   rating: number;
 
   @ManyToOne(() => Image, { onDelete: 'SET NULL' })

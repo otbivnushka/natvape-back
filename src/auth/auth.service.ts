@@ -40,8 +40,8 @@ export class AuthService {
     const tgUser = parsed.user as
       | {
           id: number;
-          firstName?: string;
-          lastName?: string;
+          first_name?: string;
+          last_name?: string;
           username?: string;
         }
       | undefined;
@@ -57,7 +57,7 @@ export class AuthService {
         telegramId: tgUser.id,
         telegramUsername: tgUser.username ?? null,
         name:
-          [tgUser.firstName, tgUser.lastName]
+          [tgUser.first_name, tgUser.last_name]
             .filter(Boolean)
             .join(' ')
             .trim() || 'User',

@@ -13,6 +13,7 @@ export class CategoriesService {
   async findAll() {
     const categories = await this.categoriesRepository.find({
       relations: { products: true },
+      order: { id: 'ASC' },
     });
 
     return categories.map((cat) => ({

@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { Image } from '../images/entities/image.entity';
+import { Rate } from '../rates/entities/rate.entity';
 import { QueryProductsDto } from './dto/query-products.dto';
 
 @Injectable()
@@ -14,6 +15,8 @@ export class ProductsService {
   constructor(
     @InjectRepository(Product)
     private productsRepository: Repository<Product>,
+    @InjectRepository(Rate)
+    private ratesRepository: Repository<Rate>,
     private configService: ConfigService,
   ) {
     this.baseUrl =
@@ -74,7 +77,7 @@ export class ProductsService {
     }
 
     const page = query.page || 1;
-    const limit = query.limit || 20;
+    const limit = query.limit || 999;
     const skip = (page - 1) * limit;
 
     qb.skip(skip).take(limit);
@@ -127,6 +130,15 @@ export class ProductsService {
       throw new NotFoundException('Product not found');
     }
 
+    let userRate: number | null = null;
+    if (userId) {
+      const rate = await this.ratesRepository.findOneBy({
+        productId: id,
+        userId,
+      });
+      userRate = rate?.value ?? null;
+    }
+
     return {
       id: product.id,
       name: product.name,
@@ -141,6 +153,7 @@ export class ProductsService {
       brand: product.brand,
       variantLabel: product.variantLabel,
       visible: product.visible,
+      userRate,
       variants:
         product.variants?.map((v) => ({
           id: v.id,
