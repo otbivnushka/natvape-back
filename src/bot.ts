@@ -28,7 +28,7 @@ export function startBot(app: INestApplication) {
   }
 
   const bot = new TelegramBot(token, { polling: true });
-  const webAppUrl = configService.get<string>('FRONTEND_URL', '');
+  const webAppUrl = configService.get<string>('FRONTEND_URL', '') + 'profile';
 
   bot.onText(/\/start/, (msg) => {
     void bot.sendMessage(msg.chat.id, 'Добро пожаловать в NatVape!', {
