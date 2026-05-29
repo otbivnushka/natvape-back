@@ -10,26 +10,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { startBot } from './bot';
 
 async function bootstrap() {
-  const appContext = await NestFactory.createApplicationContext(AppModule);
-  const configService = appContext.get(ConfigService);
-  await appContext.close();
-
-  const httpsOptions = {
-    cert: readFileSync(
-      join(
-        process.cwd(),
-        configService.get('SSL_CERT', './mini-app.local.pem'),
-      ),
-    ),
-    key: readFileSync(
-      join(
-        process.cwd(),
-        configService.get('SSL_KEY', './mini-app.local-key.pem'),
-      ),
-    ),
-  };
-
-  const app = await NestFactory.create(AppModule, { httpsOptions });
+  const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
 
   app.enableCors({
     origin: true,
@@ -57,7 +39,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);
 
-  await app.listen(configService.get('PORT', 443), '0.0.0.0');
+  await app.listen(configService.get('PORT', 3000), 'localhost');
 
   const dataSource = app.get(DataSource);
 

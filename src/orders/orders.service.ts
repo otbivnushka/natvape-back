@@ -55,6 +55,8 @@ export class OrdersService {
   }
 
   async create(userId: number, dto: CreateOrderDto) {
+    console.log(`[Order] Creating order for userId=${userId}, method=${dto.deliveryMethod}`);
+
     const cartItems = await this.cartRepository.find({
       where: { userId },
       relations: {
@@ -68,7 +70,15 @@ export class OrdersService {
     });
 
     if (!cartItems.length) {
+      console.log(`[Order] Cart empty for userId=${userId}`);
       throw new BadRequestException('Cart is empty');
+    }
+
+    console.log(`[Order] Cart items count=${cartItems.length}`);
+    for (const item of cartItems) {
+      console.log(
+        `  - productId=${item.productId} name="${item.product.name}" qty=${item.quantity} variantKey="${item.variantKey}" price=${item.product.price}`,
+      );
     }
 
     const groups = new Map<number, CartItem[]>();
@@ -82,6 +92,7 @@ export class OrdersService {
       (sum, group) => sum + this.calcGroupTotal(group),
       0,
     );
+    console.log(`[Order] Groups=${groups.size} total=${Number(total.toFixed(2))}`);
 
     const order = this.ordersRepository.create({
       userId,
@@ -94,6 +105,7 @@ export class OrdersService {
     });
 
     const savedOrder = await this.ordersRepository.save(order);
+    console.log(`[Order] Saved order #${savedOrder.id}`);
 
     const orderItems = cartItems.map((item) =>
       this.orderItemRepository.create({
@@ -115,6 +127,7 @@ export class OrdersService {
     );
 
     await this.orderItemRepository.save(orderItems);
+    console.log(`[Order] Saved ${orderItems.length} order items`);
 
     for (const item of cartItems) {
       if (item.variantKey) {
@@ -131,6 +144,7 @@ export class OrdersService {
             .set({ stock: () => `GREATEST(0, stock - ${item.quantity})` })
             .where('id = :id', { id: variant.id })
             .execute();
+          console.log(`  - deducted stock variant id=${variant.id} qty=${item.quantity}`);
         }
         if (color) {
           await this.dataSource
@@ -139,11 +153,13 @@ export class OrdersService {
             .set({ stock: () => `GREATEST(0, stock - ${item.quantity})` })
             .where('id = :id', { id: color.id })
             .execute();
+          console.log(`  - deducted stock color id=${color.id} qty=${item.quantity}`);
         }
       }
     }
 
     await this.cartRepository.delete({ userId });
+    console.log(`[Order] Cart cleared for userId=${userId}`);
 
     const returnOrder = await this.ordersRepository.findOne({
       where: { id: savedOrder.id },
@@ -151,13 +167,16 @@ export class OrdersService {
     });
 
     const admins = await this.usersService.findAllAdmins();
+    console.log(`[Order] Sending Telegram notification to ${admins.length} admins`);
     for (const admin of admins) {
-      await sendTelegramMessage(
+      const ok = await sendTelegramMessage(
         admin.telegramId,
         buildOrderMessage(returnOrder!),
       );
+      console.log(`  - admin telegramId=${admin.telegramId} sent=${ok}`);
     }
 
+    console.log(`[Order] Done #${savedOrder.id}`);
     return returnOrder;
   }
 

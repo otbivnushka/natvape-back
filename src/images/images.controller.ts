@@ -60,7 +60,16 @@ export class ImagesController {
     if (!image) throw new NotFoundException('Image not found');
 
     const uploadDir = process.env.UPLOAD_DIR || join(process.cwd(), 'uploads');
-    res.sendFile(join(uploadDir, filename));
+    const filePath = join(uploadDir, filename);
+
+    res.sendFile(filePath, (err) => {
+      if (err) {
+        console.error('[ImagesController] sendFile error:', err.message);
+        if (!res.headersSent) {
+          res.status(404).json({ message: 'File not found', statusCode: 404 });
+        }
+      }
+    });
   }
 
   @Delete(':id')
