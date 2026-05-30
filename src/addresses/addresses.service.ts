@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { Address } from './entities/address.entity';
+import { Order } from '../orders/entities/order.entity';
 import { CreateAddressDto } from './dto/create-address.dto';
 
 @Injectable()
@@ -9,6 +14,8 @@ export class AddressesService {
   constructor(
     @InjectRepository(Address)
     private addressesRepository: Repository<Address>,
+    @InjectRepository(Order)
+    private ordersRepository: Repository<Order>,
   ) {}
 
   async findAll(userId: number) {
@@ -30,6 +37,16 @@ export class AddressesService {
     if (!address) {
       throw new NotFoundException('Address not found');
     }
+
+    const activeOrders = await this.ordersRepository.count({
+      where: { addressId, status: Not('end') },
+    });
+    if (activeOrders > 0) {
+      throw new BadRequestException(
+        'Cannot delete address with active orders',
+      );
+    }
+
     await this.addressesRepository.remove(address);
   }
 }

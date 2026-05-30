@@ -39,7 +39,7 @@ export class Order {
   @Column({ nullable: true })
   addressId: number | null;
 
-  @ManyToOne(() => Address)
+  @ManyToOne(() => Address, { onDelete: 'SET NULL' })
   @JoinColumn()
   address: Address | null;
 
