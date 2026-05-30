@@ -63,3 +63,4 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 .env.production
 txt.txt
 NGINX_DEPLOY.md
+act.md
