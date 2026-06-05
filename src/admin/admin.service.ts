@@ -8,6 +8,8 @@ import { Category } from '../categories/entities/category.entity';
 import { Order } from '../orders/entities/order.entity';
 import { OrderItem } from '../orders/entities/order-item.entity';
 import { Image } from '../images/entities/image.entity';
+import { StorySet } from '../stories/entities/story-set.entity';
+import { Story } from '../stories/entities/story.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
@@ -18,6 +20,10 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { User } from '../users/entities/user.entity';
+import { CreateStorySetDto } from '../stories/dto/create-story-set.dto';
+import { UpdateStorySetDto } from '../stories/dto/update-story-set.dto';
+import { CreateStoryDto } from '../stories/dto/create-story.dto';
+import { UpdateStoryDto } from '../stories/dto/update-story.dto';
 
 @Injectable()
 export class AdminService {
@@ -38,6 +44,10 @@ export class AdminService {
     private imagesRepository: Repository<Image>,
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(StorySet)
+    private storySetsRepository: Repository<StorySet>,
+    @InjectRepository(Story)
+    private storiesRepository: Repository<Story>,
     private dataSource: DataSource,
   ) {}
 
@@ -241,5 +251,92 @@ export class AdminService {
 
     user.isAdmin = false;
     return this.usersRepository.save(user);
+  }
+
+  async createStorySet(dto: CreateStorySetDto) {
+    const { stories, imageId, ...data } = dto;
+    const set = this.storySetsRepository.create({
+      ...data,
+      image: imageId
+        ? await this.imagesRepository.findOneBy({ id: imageId })
+        : null,
+    });
+    const saved = await this.storySetsRepository.save(set);
+
+    if (stories?.length) {
+      const storyEntities = await Promise.all(
+        stories.map(async (s) =>
+          this.storiesRepository.create({
+            ...s,
+            image: s.imageId
+              ? await this.imagesRepository.findOneBy({ id: s.imageId })
+              : null,
+            storySetId: saved.id,
+          }),
+        ),
+      );
+      await this.storiesRepository.save(storyEntities);
+    }
+
+    return this.storySetsRepository.findOne({
+      where: { id: saved.id },
+      relations: { image: true, stories: { image: true } },
+    });
+  }
+
+  async updateStorySet(id: number, dto: UpdateStorySetDto) {
+    const set = await this.storySetsRepository.findOneBy({ id });
+    if (!set) throw new NotFoundException('StorySet not found');
+
+    if (dto.imageId !== undefined) {
+      set.image = dto.imageId
+        ? await this.imagesRepository.findOneBy({ id: dto.imageId })
+        : null;
+    }
+
+    const { imageId: _imageId, ...rest } = dto;
+    Object.assign(set, rest);
+    return this.storySetsRepository.save(set);
+  }
+
+  async deleteStorySet(id: number) {
+    const set = await this.storySetsRepository.findOneBy({ id });
+    if (!set) throw new NotFoundException('StorySet not found');
+    await this.storySetsRepository.remove(set);
+  }
+
+  async createStory(storySetId: number, dto: CreateStoryDto) {
+    const set = await this.storySetsRepository.findOneBy({ id: storySetId });
+    if (!set) throw new NotFoundException('StorySet not found');
+
+    const story = this.storiesRepository.create({
+      ...dto,
+      image: dto.imageId
+        ? await this.imagesRepository.findOneBy({ id: dto.imageId })
+        : null,
+      storySetId,
+    });
+    return this.storiesRepository.save(story);
+  }
+
+  async updateStory(id: number, dto: UpdateStoryDto) {
+    const story = await this.storiesRepository.findOneBy({ id });
+    if (!story) throw new NotFoundException('Story not found');
+
+    if (dto.imageId !== undefined) {
+      story.image = dto.imageId
+        ? await this.imagesRepository.findOneBy({ id: dto.imageId })
+        : null;
+    }
+
+    const { imageId: _imageId, ...rest } = dto;
+    Object.assign(story, rest);
+    return this.storiesRepository.save(story);
+  }
+
+  async deleteStory(id: number) {
+    const story = await this.storiesRepository.findOneBy({ id });
+    if (!story) throw new NotFoundException('Story not found');
+    await this.storiesRepository.remove(story);
   }
 }
