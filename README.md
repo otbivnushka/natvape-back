@@ -17,13 +17,13 @@
 - **JWT + Passport** — authentication
 - **bcrypt** — password hashing
 - **class-validator / class-transformer** — DTO validation
-- **Telegraf / nestjs-telegraf** — Telegram Bot (planned)
+- **Telegraf / nestjs-telegraf** — Telegram Bot
 
 ---
 
 ## Features
 
-- Registration / login with JWT (access token, 7 days)
+- Registration / login with JWT (access token, 30 days)
 - Products: pagination, filters (category, price, brand, search), sorting, brand list
 - Categories with product count
 - Cart with unique constraint `(user + product + variant)`
@@ -107,68 +107,3 @@ Authorization: Bearer <token>
 | DELETE | `/api/addresses/:id` | Delete address |
 
 ---
-
-## Telegram Bot (planned)
-
-Module based on `nestjs-telegraf`:
-- Automatic admin notifications on new orders
-- Commands: `/orders` (recent orders), `/stats` (total revenue)
-
-```bash
-npm install nestjs-telegraf telegraf
-```
-
-```env
-TELEGRAM_BOT_TOKEN=...
-TELEGRAM_ADMIN_CHAT_ID=...
-```
-
----
-
-## Project Structure
-
-```
-src/
-├── auth/          # JWT auth + Passport strategy
-├── users/         # User service
-├── categories/    # Product categories
-├── products/      # Products, variants, colors
-├── cart/          # Shopping cart
-├── wishlist/      # Wishlist
-├── orders/        # Orders + OrderItems
-├── profile/       # User profile
-├── addresses/     # Delivery addresses
-├── common/        # JwtAuthGuard, CurrentUser decorator, ExceptionFilter, SnakeNamingStrategy
-├── data/          # Seed data (25 products, 6 categories)
-├── seed.ts        # Database seed script
-└── main.ts        # Entry point
-```
-
----
-
-## Database
-
-All tables use `snake_case` naming.
-
-| Table | Purpose |
-|-------|---------|
-| `users` | Users |
-| `categories` | Categories (`liquids`, `coils`, …) |
-| `products` | Products |
-| `product_variants` | Variants (flavors, strength) |
-| `product_colors` | Colors |
-| `cart_items` | Cart |
-| `wishlist_items` | Wishlist |
-| `orders` | Orders |
-| `order_items` | Order line items (snapshot) |
-| `addresses` | Delivery addresses |
-
----
-
-## Test User
-
-- **Email:** `max@natvape.ru`
-- **Password:** `password123`
-- **Phone:** `+375291234567`
-
-After `npm run seed` the database also contains 6 categories, 25 products with variants, 3 addresses, and 3 sample orders.
