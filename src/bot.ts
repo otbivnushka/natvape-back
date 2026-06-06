@@ -87,6 +87,30 @@ export function startBot(app: INestApplication) {
     })();
   });
 
+  bot.onText(/\/swap/, (msg) => {
+    void (async () => {
+      const user = await usersService.findByTelegramId(msg.chat.id);
+      if (!isAdmin(user)) return;
+      if (!msg.text) return;
+      const telegramUsername = msg.text.split(' ')[1];
+      if (!telegramUsername) return;
+      const orderId = msg.text.split(' ')[2];
+      if (!orderId) return;
+
+      await adminService.swapOrder(telegramUsername, Number(orderId));
+      await bot.sendMessage(msg.chat.id, `${telegramUsername} получил заказ #${orderId}`);
+    })();
+  });
+
+  bot.onText(/\/ahelp/, (msg) => {
+    void (async () => {
+      const user = await usersService.findByTelegramId(msg.chat.id);
+      if (!isAdmin(user)) return;
+
+      await bot.sendMessage(msg.chat.id, `/makeadmin <telegramUsername> - сделать админом\n/unmakeadmin <telegramUsername> - сделать не админом\n/swap <telegramUsername> <orderId> - поменять заказ у пользователя`);
+    })();
+  });
+
   bot.onText(/Рассылка/, (msg) => {
     void (async () => {
       const user = await usersService.findByTelegramId(msg.chat.id);

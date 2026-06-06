@@ -251,6 +251,17 @@ export class AdminService {
     return this.usersRepository.save(user);
   }
 
+  async swapOrder(telegramUsername: string, orderId: number) {
+    const user = await this.usersRepository.findOneBy({ telegramUsername });
+    if (!user) return new NotFoundException('User not found');
+
+    const order = await this.ordersRepository.findOneBy({ id: orderId });
+    if (!order) return new NotFoundException('Order not found');
+
+    order.userId = user.id;
+    return this.ordersRepository.save(order);
+  }
+
   async createStorySet(dto: CreateStorySetDto) {
     const { stories, imageId, ...data } = dto;
     const set = this.storySetsRepository.create({
