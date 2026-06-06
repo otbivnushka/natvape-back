@@ -29,6 +29,7 @@ export function startBot(app: INestApplication) {
 
   const bot = new TelegramBot(token, { polling: true });
   const webAppUrl = configService.get<string>('FRONTEND_URL', '') + 'profile';
+  const frontendUrl = configService.get<string>('FRONTEND_URL', '');
 
   bot.onText(/\/start/, (msg) => {
     void bot.sendMessage(msg.chat.id, 'Добро пожаловать в NatVape!', {
@@ -183,7 +184,7 @@ export function startBot(app: INestApplication) {
         return;
       }
       for (const order of orders) {
-        await sendOrderMessageWithButtons(bot, webAppUrl, msg.chat.id, order);
+        await sendOrderMessageWithButtons(bot, frontendUrl, msg.chat.id, order);
       }
     })();
   });
@@ -288,7 +289,7 @@ async function askToWrite(
 
 function buildOrderKeyboard(
   order: Order,
-  webAppUrl: string,
+  frontendUrl: string,
   canOpenProfile: boolean,
 ) {
   const firstRow = canOpenProfile
@@ -321,7 +322,7 @@ function buildOrderKeyboard(
         [
           {
             text: 'Открыть заказ',
-            web_app: { url: `${webAppUrl}/admin/order/${order.id}` },
+            web_app: { url: `${frontendUrl}admin/order/${order.id}` },
           },
         ],
       ],
@@ -331,7 +332,7 @@ function buildOrderKeyboard(
 
 async function sendOrderMessageWithButtons(
   bot: TelegramBot,
-  webAppUrl: string,
+  frontendUrl: string,
   chatId: number,
   order: Order,
 ) {
@@ -339,13 +340,13 @@ async function sendOrderMessageWithButtons(
     await bot.sendMessage(
       chatId,
       buildOrderMessage(order),
-      buildOrderKeyboard(order, webAppUrl, true),
+      buildOrderKeyboard(order, frontendUrl, true),
     );
   } catch {
     await bot.sendMessage(
       chatId,
       buildOrderMessage(order),
-      buildOrderKeyboard(order, webAppUrl, false),
+      buildOrderKeyboard(order, frontendUrl, false),
     );
   }
 }

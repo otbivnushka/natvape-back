@@ -21,10 +21,10 @@ export class Story {
   @Column({ type: 'int', default: 3000 })
   duration: number;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   title: string | null;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   subtitle: string | null;
 
   @Column()

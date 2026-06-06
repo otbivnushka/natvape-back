@@ -21,9 +21,7 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { User } from '../users/entities/user.entity';
 import { CreateStorySetDto } from '../stories/dto/create-story-set.dto';
-import { UpdateStorySetDto } from '../stories/dto/update-story-set.dto';
 import { CreateStoryDto } from '../stories/dto/create-story.dto';
-import { UpdateStoryDto } from '../stories/dto/update-story.dto';
 
 @Injectable()
 export class AdminService {
@@ -284,21 +282,6 @@ export class AdminService {
     });
   }
 
-  async updateStorySet(id: number, dto: UpdateStorySetDto) {
-    const set = await this.storySetsRepository.findOneBy({ id });
-    if (!set) throw new NotFoundException('StorySet not found');
-
-    if (dto.imageId !== undefined) {
-      set.image = dto.imageId
-        ? await this.imagesRepository.findOneBy({ id: dto.imageId })
-        : null;
-    }
-
-    const { imageId: _imageId, ...rest } = dto;
-    Object.assign(set, rest);
-    return this.storySetsRepository.save(set);
-  }
-
   async deleteStorySet(id: number) {
     const set = await this.storySetsRepository.findOneBy({ id });
     if (!set) throw new NotFoundException('StorySet not found');
@@ -316,21 +299,6 @@ export class AdminService {
         : null,
       storySetId,
     });
-    return this.storiesRepository.save(story);
-  }
-
-  async updateStory(id: number, dto: UpdateStoryDto) {
-    const story = await this.storiesRepository.findOneBy({ id });
-    if (!story) throw new NotFoundException('Story not found');
-
-    if (dto.imageId !== undefined) {
-      story.image = dto.imageId
-        ? await this.imagesRepository.findOneBy({ id: dto.imageId })
-        : null;
-    }
-
-    const { imageId: _imageId, ...rest } = dto;
-    Object.assign(story, rest);
     return this.storiesRepository.save(story);
   }
 

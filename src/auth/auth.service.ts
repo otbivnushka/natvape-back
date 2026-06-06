@@ -17,6 +17,15 @@ export class AuthService {
     this.botToken = configService.get<string>('BOT_TOKEN', '');
   }
 
+  private generateTokens(userId: number) {
+    const accessToken = this.jwtService.sign({ sub: userId });
+    const refreshToken = this.jwtService.sign(
+      { sub: userId, type: 'refresh' },
+      { expiresIn: '30d' },
+    );
+    return { accessToken, refreshToken };
+  }
+
   async telegramAuth(dto: TelegramAuthDto) {
     if (!this.botToken) {
       throw new UnauthorizedException('BOT_TOKEN not configured');
@@ -68,7 +77,7 @@ export class AuthService {
       });
     }
 
-    const accessToken = this.jwtService.sign({ sub: user.id });
+    const { accessToken, refreshToken } = this.generateTokens(user.id);
 
     const {
       cartItems: _cartItems,
@@ -76,6 +85,26 @@ export class AuthService {
       orders: _orders,
       ...safeUser
     } = user;
-    return { accessToken, user: safeUser };
+    return { accessToken, refreshToken, user: safeUser };
+  }
+
+  async refresh(refreshToken: string) {
+    let payload: { sub: number; type: string };
+    try {
+      payload = this.jwtService.verify<{ sub: number; type: string }>(refreshToken);
+    } catch {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    if (payload.type !== 'refresh') {
+      throw new UnauthorizedException('Invalid token type');
+    }
+
+    const user = await this.usersService.findById(payload.sub);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return this.generateTokens(user.id);
   }
 }

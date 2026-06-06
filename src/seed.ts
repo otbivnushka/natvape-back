@@ -16,6 +16,10 @@ import { Address } from './addresses/entities/address.entity';
 import { Order } from './orders/entities/order.entity';
 import { OrderItem } from './orders/entities/order-item.entity';
 import { categoriesData, productsData } from './data/products';
+import { Image } from './images/entities/image.entity';
+import { StorySet } from './stories/entities/story-set.entity';
+import { Story } from './stories/entities/story.entity';
+import { storySetsData } from './data/stories';
 
 async function dropAllTables() {
   const client = new Client({
@@ -30,7 +34,7 @@ async function dropAllTables() {
     DROP TABLE IF EXISTS
       cart_items, wishlist_items, order_items, orders, addresses,
       product_variants, product_colors, products, categories, users,
-      images, rates
+      images, rates, stories, story_sets
     CASCADE
   `);
   await client.end();
@@ -181,6 +185,36 @@ async function seed() {
       quantity: 3,
       price: 25,
     });
+
+    for (const setData of storySetsData) {
+      const { stories, imageFilename, ...setFields } = setData;
+
+      const setImage = await queryRunner.manager.save(Image, {
+        filename: imageFilename,
+        originalName: imageFilename,
+        size: 0,
+      });
+
+      const savedSet = await queryRunner.manager.save(StorySet, {
+        ...setFields,
+        imageId: setImage.id,
+      });
+
+      for (const storyData of stories) {
+        const storyImage = await queryRunner.manager.save(Image, {
+          filename: storyData.imageFilename,
+          originalName: storyData.imageFilename,
+          size: 0,
+        });
+
+        const { imageFilename: _img, ...storyFields } = storyData;
+        await queryRunner.manager.save(Story, {
+          ...storyFields,
+          imageId: storyImage.id,
+          storySetId: savedSet.id,
+        });
+      }
+    }
 
     await queryRunner.commitTransaction();
     console.log('Seed completed successfully!');

@@ -23,9 +23,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CreateStorySetDto } from '../stories/dto/create-story-set.dto';
-import { UpdateStorySetDto } from '../stories/dto/update-story-set.dto';
 import { CreateStoryDto } from '../stories/dto/create-story.dto';
-import { UpdateStoryDto } from '../stories/dto/update-story.dto';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -160,12 +158,6 @@ export class AdminController {
     return this.adminService.createStorySet(dto);
   }
 
-  @Put('story-sets/:id')
-  @ApiOperation({ summary: 'Update story set' })
-  async updateStorySet(@Param('id') id: string, @Body() dto: UpdateStorySetDto) {
-    return this.adminService.updateStorySet(+id, dto);
-  }
-
   @Delete('story-sets/:id')
   @ApiOperation({ summary: 'Delete story set' })
   async deleteStorySet(@Param('id') id: string) {
@@ -176,12 +168,6 @@ export class AdminController {
   @ApiOperation({ summary: 'Add story to story set' })
   async createStory(@Param('id') storySetId: string, @Body() dto: CreateStoryDto) {
     return this.adminService.createStory(+storySetId, dto);
-  }
-
-  @Patch('stories/:id')
-  @ApiOperation({ summary: 'Update story' })
-  async updateStory(@Param('id') id: string, @Body() dto: UpdateStoryDto) {
-    return this.adminService.updateStory(+id, dto);
   }
 
   @Delete('stories/:id')
