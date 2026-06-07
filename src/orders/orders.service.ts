@@ -38,7 +38,12 @@ export class OrdersService {
 
   private resolveImageUrl(image: Image | null): string {
     if (!image) return this.placeholder;
-    return `${this.baseUrl}/api/images/${image.filename}`;
+    return `${image.filename}`;
+  }
+
+  private resolveProductImage(url: string): string {
+    if (url.startsWith('http')) return url;
+    return `${this.baseUrl}/api/images/${url}`;
   }
 
   private calcGroupTotal(items: CartItem[]): number {
@@ -199,14 +204,19 @@ export class OrdersService {
     if (!order) {
       throw new NotFoundException('Order not found');
     }
+    const items = order.items.map((item) => ({
+      ...item,
+      productImage: this.resolveProductImage(item.productImage),
+    }));
+
     if (user.isAdmin) {
-      return order;
+      return { ...order, items };
     }
 
     if (order?.userId !== user.id) {
       throw new ForbiddenException('Access denied');
     }
 
-    return order;
+    return { ...order, items };
   }
 }

@@ -98,18 +98,6 @@ export class ProductsService {
         brand: item.brand,
         variantLabel: item.variantLabel,
         visible: item.visible,
-        variants:
-          item.variants?.map((v) => ({
-            name: v.name,
-            value: v.value,
-            stock: v.stock,
-          })) || [],
-        colors:
-          item.colors?.map((c) => ({
-            name: c.name,
-            hex: c.hex,
-            stock: c.stock,
-          })) || [],
       })),
       meta: {
         total,
