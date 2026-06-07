@@ -36,8 +36,8 @@ export function buildOrderMessage(order: Order): string {
 
   lines.push('');
   lines.push('Товары:');
-
-  order.items.forEach((item, i) => {
+  
+  (order.items ?? []).forEach((item, i) => {
     const variant = item.variantName ? ` (${item.variantName})` : '';
     const sum = Number(item.price) * item.quantity;
     lines.push(

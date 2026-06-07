@@ -189,7 +189,7 @@ export class AdminService {
     return this.ordersRepository.find({
       where: { status: 'sent' },
       order: { createdAt: 'DESC' },
-      relations: { user: true },
+      relations: { user: true, items: true },
     });
   }
 
