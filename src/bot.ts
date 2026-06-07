@@ -7,6 +7,7 @@ import { AdminService } from './admin/admin.service';
 import { buildOrderMessage } from './utils/buildOrderMessage';
 import { Order } from './orders/entities/order.entity';
 import { sendTelegramMessage } from './utils/sendTelegramMessage';
+import { OrdersService } from './orders/orders.service';
 
 const mailingState = new Map<
   number,
@@ -17,6 +18,7 @@ export function startBot(app: INestApplication) {
   const configService = app.get(ConfigService);
   const usersService = app.get(UsersService);
   const adminService = app.get(AdminService);
+  const orderService = app.get(OrdersService);
 
   const enabled = configService.get<string>('BOT_ENABLED', 'false');
   if (enabled !== 'true') return;
@@ -102,12 +104,25 @@ export function startBot(app: INestApplication) {
     })();
   });
 
+  bot.onText(/\/getorder/, (msg) => {
+    void (async () => {
+      const user = await usersService.findByTelegramId(msg.chat.id);
+      if (!user || !isAdmin(user)) return;
+      if (!msg.text) return;
+      const orderId = msg.text.split(' ')[1];
+      if (!orderId) return;
+
+      const order = await orderService.findById(user.id, Number(orderId));
+      await bot.sendMessage(msg.chat.id, `${buildOrderMessage(order)}`);
+    })();
+  });
+
   bot.onText(/\/ahelp/, (msg) => {
     void (async () => {
       const user = await usersService.findByTelegramId(msg.chat.id);
       if (!isAdmin(user)) return;
 
-      await bot.sendMessage(msg.chat.id, `/makeadmin <telegramUsername> - сделать админом\n/unmakeadmin <telegramUsername> - сделать не админом\n/swap <telegramUsername> <orderId> - поменять заказ у пользователя`);
+      await bot.sendMessage(msg.chat.id, `/makeadmin <telegramUsername> - сделать админом\n/unmakeadmin <telegramUsername> - сделать не админом\n/swap <telegramUsername> <orderId> - поменять заказ у пользователя\n/getorder <orderId> - получить заказ`);
     })();
   });
 
