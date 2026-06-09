@@ -100,7 +100,10 @@ export function startBot(app: INestApplication) {
       if (!orderId) return;
 
       await adminService.swapOrder(telegramUsername, Number(orderId));
-      await bot.sendMessage(msg.chat.id, `${telegramUsername} получил заказ #${orderId}`);
+      await bot.sendMessage(
+        msg.chat.id,
+        `${telegramUsername} получил заказ #${orderId}`,
+      );
     })();
   });
 
@@ -122,7 +125,10 @@ export function startBot(app: INestApplication) {
       const user = await usersService.findByTelegramId(msg.chat.id);
       if (!isAdmin(user)) return;
 
-      await bot.sendMessage(msg.chat.id, `/makeadmin <telegramUsername> - сделать админом\n/unmakeadmin <telegramUsername> - сделать не админом\n/swap <telegramUsername> <orderId> - поменять заказ у пользователя\n/getorder <orderId> - получить заказ`);
+      await bot.sendMessage(
+        msg.chat.id,
+        `/makeadmin <telegramUsername> - сделать админом\n/unmakeadmin <telegramUsername> - сделать не админом\n/swap <telegramUsername> <orderId> - поменять заказ у пользователя\n/getorder <orderId> - получить заказ`,
+      );
     })();
   });
 
@@ -331,6 +337,24 @@ function buildOrderKeyboard(
   frontendUrl: string,
   canOpenProfile: boolean,
 ) {
+  const lastRow = order.address?.label
+    ? [
+        {
+          text: 'Y Maps',
+          url: getYMapsLink(order.address?.label),
+        },
+        {
+          text: 'Открыть заказ',
+          web_app: { url: `${frontendUrl}admin/order/${order.id}` },
+        },
+      ]
+    : [
+        {
+          text: 'Открыть заказ',
+          web_app: { url: `${frontendUrl}admin/order/${order.id}` },
+        },
+      ];
+
   const firstRow = canOpenProfile
     ? [
         {
@@ -358,15 +382,15 @@ function buildOrderKeyboard(
             callback_data: `check_all:${order.user.id}`,
           },
         ],
-        [
-          {
-            text: 'Открыть заказ',
-            web_app: { url: `${frontendUrl}admin/order/${order.id}` },
-          },
-        ],
+        lastRow,
       ],
     },
   };
+}
+
+function getYMapsLink(address: string) {
+  const url = `https://yandex.ru/maps/?text=${encodeURIComponent(address)}`;
+  return url;
 }
 
 async function sendOrderMessageWithButtons(
