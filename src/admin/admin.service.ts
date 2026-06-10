@@ -10,6 +10,8 @@ import { OrderItem } from '../orders/entities/order-item.entity';
 import { Image } from '../images/entities/image.entity';
 import { StorySet } from '../stories/entities/story-set.entity';
 import { Story } from '../stories/entities/story.entity';
+import { Address } from '../addresses/entities/address.entity';
+import { CreatePickupAddressDto } from './dto/create-pickup-address.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
@@ -46,6 +48,8 @@ export class AdminService {
     private storySetsRepository: Repository<StorySet>,
     @InjectRepository(Story)
     private storiesRepository: Repository<Story>,
+    @InjectRepository(Address)
+    private addressesRepository: Repository<Address>,
     private dataSource: DataSource,
   ) {}
 
@@ -211,7 +215,7 @@ export class AdminService {
     for (const item of order.items) {
       if (!item.variantKey) continue;
 
-      await this.dataSource
+      const variantResult = await this.dataSource
         .createQueryBuilder()
         .update('product_variants')
         .set({ stock: () => `stock + ${item.quantity}` })
@@ -221,15 +225,17 @@ export class AdminService {
         })
         .execute();
 
-      await this.dataSource
-        .createQueryBuilder()
-        .update('product_colors')
-        .set({ stock: () => `stock + ${item.quantity}` })
-        .where('product_id = :pid AND name = :val', {
-          pid: item.productId,
-          val: item.variantKey,
-        })
-        .execute();
+      if (variantResult.affected === 0) {
+        await this.dataSource
+          .createQueryBuilder()
+          .update('product_colors')
+          .set({ stock: () => `stock + ${item.quantity}` })
+          .where('product_id = :pid AND hex = :val', {
+            pid: item.productId,
+            val: item.variantKey,
+          })
+          .execute();
+      }
     }
 
     await this.ordersRepository.remove(order);
@@ -317,5 +323,16 @@ export class AdminService {
     const story = await this.storiesRepository.findOneBy({ id });
     if (!story) throw new NotFoundException('Story not found');
     await this.storiesRepository.remove(story);
+  }
+
+  async createPickupAddress(dto: CreatePickupAddressDto) {
+    const address = this.addressesRepository.create({ ...dto, isPickup: true });
+    return this.addressesRepository.save(address);
+  }
+
+  async deletePickupAddress(id: number) {
+    const address = await this.addressesRepository.findOneBy({ id });
+    if (!address) throw new NotFoundException('Pickup address not found');
+    await this.addressesRepository.remove(address);
   }
 }

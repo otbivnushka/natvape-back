@@ -34,4 +34,7 @@ export class CartItem {
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   variantKey: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  variantName: string | null;
 }

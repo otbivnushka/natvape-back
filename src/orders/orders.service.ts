@@ -113,13 +113,7 @@ export class OrdersService {
         productName: item.product.name,
         productImage: this.resolveImageUrl(item.product.image),
         variantKey: item.variantKey,
-        variantName: item.variantKey
-          ? (item.product.variants?.find((v) => v.value === item.variantKey)
-              ?.name ??
-            item.product.colors?.find((v) => v.name === item.variantKey)
-              ?.name ??
-            null)
-          : null,
+        variantName: item.variantName ?? null,
         quantity: item.quantity,
         price: Number(item.product.price),
       }),
@@ -128,12 +122,10 @@ export class OrdersService {
     await this.orderItemRepository.save(orderItems);
 
     for (const item of cartItems) {
+      console.log(JSON.stringify(item))
       if (item.variantKey) {
         const variant = item.product.variants?.find(
           (v) => v.value === item.variantKey,
-        );
-        const color = item.product.colors?.find(
-          (c) => c.name === item.variantKey,
         );
         if (variant) {
           await this.dataSource
@@ -142,14 +134,18 @@ export class OrdersService {
             .set({ stock: () => `GREATEST(0, stock - ${item.quantity})` })
             .where('id = :id', { id: variant.id })
             .execute();
-        }
-        if (color) {
-          await this.dataSource
-            .createQueryBuilder()
-            .update('product_colors')
-            .set({ stock: () => `GREATEST(0, stock - ${item.quantity})` })
-            .where('id = :id', { id: color.id })
-            .execute();
+        } else {
+          const color = item.product.colors?.find(
+            (c) => c.hex === item.variantKey,
+          );
+          if (color) {
+            await this.dataSource
+              .createQueryBuilder()
+              .update('product_colors')
+              .set({ stock: () => `GREATEST(0, stock - ${item.quantity})` })
+              .where('id = :id', { id: color.id })
+              .execute();
+          }
         }
       }
     }

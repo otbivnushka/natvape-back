@@ -9,6 +9,7 @@ import { OrderItem } from '../orders/entities/order-item.entity';
 import { Image } from '../images/entities/image.entity';
 import { StorySet } from '../stories/entities/story-set.entity';
 import { Story } from '../stories/entities/story.entity';
+import { Address } from '../addresses/entities/address.entity';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { User } from '../users/entities/user.entity';
@@ -26,6 +27,7 @@ import { User } from '../users/entities/user.entity';
       User,
       StorySet,
       Story,
+      Address,
     ]),
   ],
   controllers: [AdminController],

@@ -96,6 +96,7 @@ export class CartService {
           item.product.doublePrice ? Number(item.product.doublePrice) : null,
         ),
         variantKey: item.variantKey,
+        variantName: item.variantName,
       })),
       totalItems,
       subtotal,
@@ -109,10 +110,20 @@ export class CartService {
   async addItem(userId: number, dto: AddToCartDto) {
     const product = await this.productRepository.findOne({
       where: { id: dto.productId },
+      relations: { variants: true, colors: true },
     });
 
     if (!product) {
       throw new NotFoundException('Product not found');
+    }
+
+    let variantName: string | null = null;
+    if (dto.variantKey) {
+      variantName =
+        dto.variantName ??
+        product.variants?.find((v) => v.value === dto.variantKey)?.name ??
+        product.colors?.find((c) => c.name === dto.variantKey)?.name ??
+        null;
     }
 
     const existing = await this.cartRepository.findOne({
@@ -132,6 +143,7 @@ export class CartService {
         productId: dto.productId,
         quantity: dto.quantity,
         variantKey: dto.variantKey ?? null,
+        variantName,
       });
       await this.cartRepository.save(item);
     }

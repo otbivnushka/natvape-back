@@ -21,6 +21,12 @@ import { CreateAddressDto } from './dto/create-address.dto';
 export class AddressesController {
   constructor(private addressesService: AddressesService) {}
 
+  @Get('pickup')
+  @ApiOperation({ summary: 'Get all pickup addresses' })
+  async findAllPickup() {
+    return this.addressesService.findAllPickup();
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all user addresses' })
   async findAll(@CurrentUser() user: User) {

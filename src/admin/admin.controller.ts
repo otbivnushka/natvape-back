@@ -24,6 +24,7 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CreateStorySetDto } from '../stories/dto/create-story-set.dto';
 import { CreateStoryDto } from '../stories/dto/create-story.dto';
+import { CreatePickupAddressDto } from './dto/create-pickup-address.dto';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -174,5 +175,17 @@ export class AdminController {
   @ApiOperation({ summary: 'Delete story' })
   async deleteStory(@Param('id') id: string) {
     return this.adminService.deleteStory(+id);
+  }
+
+  @Post('addresses')
+  @ApiOperation({ summary: 'Create pickup address' })
+  async createPickupAddress(@Body() dto: CreatePickupAddressDto) {
+    return this.adminService.createPickupAddress(dto);
+  }
+
+  @Delete('addresses/:id')
+  @ApiOperation({ summary: 'Delete pickup address' })
+  async deletePickupAddress(@Param('id') id: string) {
+    return this.adminService.deletePickupAddress(+id);
   }
 }

@@ -13,6 +13,7 @@ async function sendTelegramMessage(
       body: JSON.stringify({ chat_id: chatId, text, ...extra }),
     });
     const data = await res.json();
+    // eslint-disable-next-line 
     if (!res.ok) throw new Error(data.description || res.statusText);
     return true;
   } catch (error) {

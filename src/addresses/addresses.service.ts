@@ -25,6 +25,13 @@ export class AddressesService {
     });
   }
 
+  async findAllPickup() {
+    return this.addressesRepository.find({
+      where: { isPickup: true },
+      select: { id: true, label: true, lat: true, lng: true },
+    });
+  }
+
   async create(userId: number, dto: CreateAddressDto) {
     const address = this.addressesRepository.create({ userId, ...dto });
     return this.addressesRepository.save(address);

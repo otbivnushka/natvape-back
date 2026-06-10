@@ -12,12 +12,12 @@ export class Address {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  userId: number;
+  @Column({ nullable: true })
+  userId: number | null;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn()
-  user: User;
+  user: User | null;
 
   @Column({ length: 100 })
   label: string;
@@ -27,4 +27,7 @@ export class Address {
 
   @Column({ type: 'decimal', precision: 9, scale: 6 })
   lng: number;
+
+  @Column({ type: 'boolean', default: false })
+  isPickup: boolean;
 }

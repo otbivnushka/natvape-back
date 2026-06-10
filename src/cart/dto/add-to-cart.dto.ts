@@ -11,4 +11,8 @@ export class AddToCartDto {
   @IsOptional()
   @IsString()
   variantKey?: string;
+
+  @IsOptional()
+  @IsString()
+  variantName?: string;
 }
