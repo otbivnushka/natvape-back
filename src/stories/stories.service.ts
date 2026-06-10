@@ -14,7 +14,8 @@ export class StoriesService {
     private storySetsRepository: Repository<StorySet>,
     configService: ConfigService,
   ) {
-    this.baseUrl = configService.get<string>('BASE_URL') || 'http://localhost:3000';
+    this.baseUrl =
+      configService.get<string>('BASE_URL') || 'http://localhost:3000';
   }
 
   private resolveImageUrl(image: Image | null): string | null {
@@ -40,7 +41,10 @@ export class StoriesService {
           duration: story.duration,
         };
         if (story.title) {
-          result.header = { heading: story.title, profileImage: this.resolveImageUrl(set.image)};
+          result.header = {
+            heading: story.title,
+            profileImage: this.resolveImageUrl(set.image),
+          };
           if (story.subtitle) {
             result.header.subheading = story.subtitle;
           }

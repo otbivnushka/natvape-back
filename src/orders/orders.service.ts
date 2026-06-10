@@ -122,7 +122,7 @@ export class OrdersService {
     await this.orderItemRepository.save(orderItems);
 
     for (const item of cartItems) {
-      console.log(JSON.stringify(item))
+      console.log(JSON.stringify(item));
       if (item.variantKey) {
         const variant = item.product.variants?.find(
           (v) => v.value === item.variantKey,

@@ -389,7 +389,7 @@ function buildOrderKeyboard(
 }
 
 function getYMapsLink(address: string) {
-  const url = `https://yandex.ru/maps/?text=${encodeURIComponent("город Витебск, " + address)}`;
+  const url = `https://yandex.ru/maps/?text=${encodeURIComponent('город Витебск, ' + address)}`;
   return url;
 }
 

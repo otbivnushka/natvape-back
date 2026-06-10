@@ -91,7 +91,9 @@ export class AuthService {
   async refresh(refreshToken: string) {
     let payload: { sub: number; type: string };
     try {
-      payload = this.jwtService.verify<{ sub: number; type: string }>(refreshToken);
+      payload = this.jwtService.verify<{ sub: number; type: string }>(
+        refreshToken,
+      );
     } catch {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }

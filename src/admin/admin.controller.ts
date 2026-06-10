@@ -167,7 +167,10 @@ export class AdminController {
 
   @Post('story-sets/:id/stories')
   @ApiOperation({ summary: 'Add story to story set' })
-  async createStory(@Param('id') storySetId: string, @Body() dto: CreateStoryDto) {
+  async createStory(
+    @Param('id') storySetId: string,
+    @Body() dto: CreateStoryDto,
+  ) {
     return this.adminService.createStory(+storySetId, dto);
   }
 

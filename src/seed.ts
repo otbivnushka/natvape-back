@@ -6,7 +6,10 @@ import * as dotenv from 'dotenv';
 import { join } from 'path';
 
 dotenv.config({ path: join(process.cwd(), '.env') });
-dotenv.config({ path: join(process.cwd(), `.env.${process.env.NODE_ENV || 'development'}`), override: true });
+dotenv.config({
+  path: join(process.cwd(), `.env.${process.env.NODE_ENV || 'development'}`),
+  override: true,
+});
 import { Category } from './categories/entities/category.entity';
 import { Product } from './products/entities/product.entity';
 import { ProductVariant } from './products/entities/product-variant.entity';

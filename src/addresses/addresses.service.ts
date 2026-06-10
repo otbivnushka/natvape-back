@@ -49,9 +49,7 @@ export class AddressesService {
       where: { addressId, status: Not('end') },
     });
     if (activeOrders > 0) {
-      throw new BadRequestException(
-        'Cannot delete address with active orders',
-      );
+      throw new BadRequestException('Cannot delete address with active orders');
     }
 
     await this.addressesRepository.remove(address);
