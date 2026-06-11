@@ -109,14 +109,18 @@ export function startBot(app: INestApplication) {
 
   bot.onText(/\/getorder/, (msg) => {
     void (async () => {
-      const user = await usersService.findByTelegramId(msg.chat.id);
-      if (!user || !isAdmin(user)) return;
-      if (!msg.text) return;
-      const orderId = msg.text.split(' ')[1];
-      if (!orderId) return;
+      try {
+        const user = await usersService.findByTelegramId(msg.chat.id);
+        if (!user || !isAdmin(user)) return;
+        if (!msg.text) return;
+        const orderId = msg.text.split(' ')[1];
+        if (!orderId) return;
 
-      const order = await orderService.findById(user.id, Number(orderId));
-      await bot.sendMessage(msg.chat.id, `${buildOrderMessage(order)}`);
+        const order = await orderService.findById(user.id, Number(orderId));
+        await bot.sendMessage(msg.chat.id, `${buildOrderMessage(order)}`);
+      } catch (e) {
+        await bot.sendMessage(msg.chat.id, `Ошибка: ${(e as Error).message}`);
+      }
     })();
   });
 
