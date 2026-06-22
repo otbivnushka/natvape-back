@@ -141,10 +141,12 @@ export function startBot(app: INestApplication) {
       const user = await usersService.findByTelegramId(msg.chat.id);
       if (!isAdmin(user)) return;
       mailingState.set(msg.chat.id, { step: 'awaiting_image' });
-      await bot.sendMessage(
-        msg.chat.id,
-        'Отправь изображение для рассылки (или просто текст, чтобы начать без картинки)',
-      );
+      await bot.sendMessage(msg.chat.id, 'Отправь изображение для рассылки', {
+        reply_markup: {
+          keyboard: [[{ text: 'отмена' }]],
+          resize_keyboard: true,
+        },
+      });
     })();
   });
 
@@ -170,27 +172,22 @@ export function startBot(app: INestApplication) {
 
       if (msg.text.toLowerCase() === 'отмена') {
         mailingState.delete(msg.chat.id);
-        await bot.sendMessage(msg.chat.id, 'Рассылка отменена');
+        await bot.sendMessage(msg.chat.id, 'Рассылка отменена', {
+          reply_markup: {
+            keyboard: [[{ text: '/auth' }]],
+            resize_keyboard: true,
+          },
+        });
         return;
       }
 
       if (state.step === 'awaiting_image') {
-        const allUsers = await usersService.findAll();
-        mailingState.delete(msg.chat.id);
-        let success = 0;
-        let failed = 0;
-        for (const u of allUsers) {
-          try {
-            await bot.sendMessage(Number(u.telegramId), msg.text);
-            success++;
-          } catch {
-            failed++;
-          }
-        }
-        await bot.sendMessage(
-          msg.chat.id,
-          `Отправлено успешно: ${success}\nНе отправлено: ${failed}`,
-        );
+        await bot.sendMessage(msg.chat.id, 'Сначала отправь изображение', {
+          reply_markup: {
+            keyboard: [[{ text: 'отмена' }]],
+            resize_keyboard: true,
+          },
+        });
         return;
       }
 
@@ -328,7 +325,8 @@ async function askToWrite(
   query: CallbackQuery,
   userTelegramId: number,
 ) {
-  const text = 'Напишите на аккаунт @NatManagerr чтобы уточнить заказ';
+  const text =
+    'Ваши настройки безопасности не позволяют отправить сообщение. Напишите на аккаунт @NatManagerr';
   const res = await sendTelegramMessage(userTelegramId, text);
   await bot.sendMessage(
     query.message!.chat.id,
