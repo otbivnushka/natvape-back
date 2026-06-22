@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
@@ -154,10 +154,31 @@ export class CartService {
   async updateItem(userId: number, itemId: number, dto: UpdateCartItemDto) {
     const item = await this.cartRepository.findOne({
       where: { id: itemId, userId },
+      relations: { product: { variants: true, colors: true } },
     });
 
     if (!item) {
       throw new NotFoundException('Cart item not found');
+    }
+
+    if (item.variantKey) {
+      const variant = item.product.variants?.find(
+        (v) => v.value === item.variantKey,
+      );
+      if (variant && dto.quantity > variant.stock) {
+        throw new BadRequestException(
+          `Доступно только ${variant.stock} шт.`,
+        );
+      }
+
+      const color = item.product.colors?.find(
+        (c) => c.name === item.variantKey,
+      );
+      if (color && dto.quantity > color.stock) {
+        throw new BadRequestException(
+          `Доступно только ${color.stock} шт.`,
+        );
+      }
     }
 
     item.quantity = dto.quantity;
