@@ -68,6 +68,7 @@ export class OrdersService {
           colors: true,
           category: true,
           image: true,
+          attributes: { attribute: true },
         },
       },
     });
@@ -110,7 +111,9 @@ export class OrdersService {
       this.orderItemRepository.create({
         orderId: savedOrder.id,
         productId: item.productId,
-        productName: item.product.name,
+        productName: item.product.name + (item.product.attributes?.length
+          ? ' (' + item.product.attributes.map(a => a.value).join(', ') + ')'
+          : ''),
         productImage: this.resolveImageUrl(item.product.image),
         variantKey: item.variantKey,
         variantName: item.variantName ?? null,
