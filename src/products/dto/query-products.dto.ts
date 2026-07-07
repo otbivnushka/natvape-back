@@ -47,4 +47,7 @@ export class QueryProductsDto {
   @Type(() => Number)
   @IsNumber()
   userId?: number;
+
+  @IsOptional()
+  attr?: string | string[];
 }

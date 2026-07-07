@@ -25,6 +25,9 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CreateStorySetDto } from '../stories/dto/create-story-set.dto';
 import { CreateStoryDto } from '../stories/dto/create-story.dto';
 import { CreatePickupAddressDto } from './dto/create-pickup-address.dto';
+import { CreateCategoryAttributeDto } from './dto/create-category-attribute.dto';
+import { CreateProductAttributeDto } from './dto/create-product-attribute.dto';
+import { UpdateProductAttributeDto } from './dto/update-product-attribute.dto';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -190,5 +193,41 @@ export class AdminController {
   @ApiOperation({ summary: 'Delete pickup address' })
   async deletePickupAddress(@Param('id') id: string) {
     return this.adminService.deletePickupAddress(+id);
+  }
+
+  @Post('category-attributes')
+  @ApiOperation({ summary: 'Create category attribute' })
+  async createCategoryAttribute(@Body() dto: CreateCategoryAttributeDto) {
+    return this.adminService.createCategoryAttribute(dto);
+  }
+
+  @Delete('category-attributes/:id')
+  @ApiOperation({ summary: 'Delete category attribute' })
+  async deleteCategoryAttribute(@Param('id') id: string) {
+    return this.adminService.deleteCategoryAttribute(+id);
+  }
+
+  @Post('products/:id/attributes')
+  @ApiOperation({ summary: 'Add attribute value to product' })
+  async createProductAttribute(
+    @Param('id') productId: string,
+    @Body() dto: CreateProductAttributeDto,
+  ) {
+    return this.adminService.createProductAttribute(+productId, dto);
+  }
+
+  @Patch('products/attributes/:attrId')
+  @ApiOperation({ summary: 'Update product attribute value' })
+  async updateProductAttribute(
+    @Param('attrId') attrId: string,
+    @Body() dto: UpdateProductAttributeDto,
+  ) {
+    return this.adminService.updateProductAttribute(+attrId, dto);
+  }
+
+  @Delete('products/attributes/:attrId')
+  @ApiOperation({ summary: 'Delete product attribute value' })
+  async deleteProductAttribute(@Param('attrId') attrId: string) {
+    return this.adminService.deleteProductAttribute(+attrId);
   }
 }

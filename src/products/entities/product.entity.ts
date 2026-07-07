@@ -11,6 +11,7 @@ import {
 import { Category } from '../../categories/entities/category.entity';
 import { ProductVariant } from './product-variant.entity';
 import { ProductColor } from './product-color.entity';
+import { ProductAttribute } from './product-attribute.entity';
 import { Image } from '../../images/entities/image.entity';
 
 @Entity('products')
@@ -69,4 +70,7 @@ export class Product {
 
   @OneToMany(() => ProductColor, (color) => color.product, { cascade: true })
   colors: ProductColor[];
+
+  @OneToMany(() => ProductAttribute, (attr) => attr.product, { cascade: true })
+  attributes: ProductAttribute[];
 }

@@ -11,7 +11,12 @@ import { Image } from '../images/entities/image.entity';
 import { StorySet } from '../stories/entities/story-set.entity';
 import { Story } from '../stories/entities/story.entity';
 import { Address } from '../addresses/entities/address.entity';
+import { ProductAttribute } from '../products/entities/product-attribute.entity';
+import { CategoryAttribute } from '../categories/entities/category-attribute.entity';
 import { CreatePickupAddressDto } from './dto/create-pickup-address.dto';
+import { CreateCategoryAttributeDto } from './dto/create-category-attribute.dto';
+import { CreateProductAttributeDto } from './dto/create-product-attribute.dto';
+import { UpdateProductAttributeDto } from './dto/update-product-attribute.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
@@ -50,6 +55,10 @@ export class AdminService {
     private storiesRepository: Repository<Story>,
     @InjectRepository(Address)
     private addressesRepository: Repository<Address>,
+    @InjectRepository(ProductAttribute)
+    private productAttributesRepository: Repository<ProductAttribute>,
+    @InjectRepository(CategoryAttribute)
+    private categoryAttributesRepository: Repository<CategoryAttribute>,
     private dataSource: DataSource,
   ) {}
 
@@ -334,5 +343,42 @@ export class AdminService {
     const address = await this.addressesRepository.findOneBy({ id });
     if (!address) throw new NotFoundException('Pickup address not found');
     await this.addressesRepository.remove(address);
+  }
+
+  async createCategoryAttribute(dto: CreateCategoryAttributeDto) {
+    const attr = this.categoryAttributesRepository.create(dto);
+    return this.categoryAttributesRepository.save(attr);
+  }
+
+  async deleteCategoryAttribute(id: number) {
+    const attr = await this.categoryAttributesRepository.findOneBy({ id });
+    if (!attr) throw new NotFoundException('Category attribute not found');
+    await this.categoryAttributesRepository.remove(attr);
+  }
+
+  async createProductAttribute(productId: number, dto: CreateProductAttributeDto) {
+    const product = await this.productsRepository.findOneBy({ id: productId });
+    if (!product) throw new NotFoundException('Product not found');
+
+    const attr = this.productAttributesRepository.create({
+      productId,
+      attributeId: dto.attributeId,
+      value: dto.value,
+    });
+    return this.productAttributesRepository.save(attr);
+  }
+
+  async updateProductAttribute(attrId: number, dto: UpdateProductAttributeDto) {
+    const attr = await this.productAttributesRepository.findOneBy({ id: attrId });
+    if (!attr) throw new NotFoundException('Product attribute not found');
+
+    attr.value = dto.value;
+    return this.productAttributesRepository.save(attr);
+  }
+
+  async deleteProductAttribute(attrId: number) {
+    const attr = await this.productAttributesRepository.findOneBy({ id: attrId });
+    if (!attr) throw new NotFoundException('Product attribute not found');
+    await this.productAttributesRepository.remove(attr);
   }
 }

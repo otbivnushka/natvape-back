@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
+import { ProductAttribute } from './entities/product-attribute.entity';
 import { Image } from '../images/entities/image.entity';
 import { Rate } from '../rates/entities/rate.entity';
 import { QueryProductsDto } from './dto/query-products.dto';
@@ -15,6 +16,8 @@ export class ProductsService {
   constructor(
     @InjectRepository(Product)
     private productsRepository: Repository<Product>,
+    @InjectRepository(ProductAttribute)
+    private productAttributesRepository: Repository<ProductAttribute>,
     @InjectRepository(Rate)
     private ratesRepository: Repository<Rate>,
     private configService: ConfigService,
@@ -34,7 +37,9 @@ export class ProductsService {
       .leftJoinAndSelect('product.category', 'category')
       .leftJoinAndSelect('product.image', 'image')
       .leftJoinAndSelect('product.variants', 'variants')
-      .leftJoinAndSelect('product.colors', 'colors');
+      .leftJoinAndSelect('product.colors', 'colors')
+      .leftJoinAndSelect('product.attributes', 'productAttr')
+      .leftJoinAndSelect('productAttr.attribute', 'attrDef');
 
     if (query.category) {
       qb.andWhere('category.key = :category', { category: query.category });
@@ -57,6 +62,31 @@ export class ProductsService {
 
     if (query.priceMax !== undefined) {
       qb.andWhere('product.price <= :priceMax', { priceMax: query.priceMax });
+    }
+
+    const attrArr = Array.isArray(query.attr) ? query.attr : query.attr ? [query.attr] : [];
+    if (attrArr.length > 0) {
+      attrArr.forEach((pair, index) => {
+        const colonIdx = pair.indexOf(':');
+        if (colonIdx === -1) return;
+        const key = pair.slice(0, colonIdx);
+        const value = pair.slice(colonIdx + 1);
+        if (index === 0) {
+          qb.andWhere('attrDef.key = :attrKey_0 AND productAttr.value = :attrVal_0', {
+            attrKey_0: key,
+            attrVal_0: value,
+          });
+        } else {
+          const aa = `attrFilter_${index}`;
+          const ad = `attrFilterDef_${index}`;
+          qb.innerJoin('product.attributes', aa)
+            .innerJoin(`${aa}.attribute`, ad)
+            .andWhere(`${ad}.key = :attrKey_${index} AND ${aa}.value = :attrVal_${index}`, {
+              [`attrKey_${index}`]: key,
+              [`attrVal_${index}`]: value,
+            });
+        }
+      });
     }
 
     switch (query.sort) {
@@ -98,6 +128,14 @@ export class ProductsService {
         brand: item.brand,
         variantLabel: item.variantLabel,
         visible: item.visible,
+        attributes:
+          item.attributes?.map((a) => ({
+            id: a.id,
+            name: a.attribute.name,
+            key: a.attribute.key,
+            type: a.attribute.type,
+            value: a.value,
+          })) || [],
       })),
       meta: {
         total,
@@ -111,7 +149,13 @@ export class ProductsService {
   async findById(id: number, userId?: number) {
     const product = await this.productsRepository.findOne({
       where: { id },
-      relations: { category: true, image: true, variants: true, colors: true },
+      relations: {
+        category: true,
+        image: true,
+        variants: true,
+        colors: true,
+        attributes: { attribute: true },
+      },
     });
 
     if (!product) {
@@ -156,6 +200,14 @@ export class ProductsService {
           hex: c.hex,
           stock: c.stock,
         })) || [],
+      attributes:
+        product.attributes?.map((a) => ({
+          id: a.id,
+          name: a.attribute.name,
+          key: a.attribute.key,
+          type: a.attribute.type,
+          value: a.value,
+        })) || [],
     };
   }
 
@@ -171,5 +223,23 @@ export class ProductsService {
 
     const result = await qb.getRawMany();
     return result.map((r) => r.brand);
+  }
+
+  async getAttributeValues(categoryKey: string) {
+    const qb = this.productAttributesRepository
+      .createQueryBuilder('pa')
+      .innerJoin('pa.product', 'product')
+      .innerJoin('product.category', 'category')
+      .innerJoin('pa.attribute', 'attr')
+      .where('category.key = :key', { key: categoryKey })
+      .select('attr.key', 'key')
+      .addSelect('attr.name', 'name')
+      .addSelect('array_agg(DISTINCT pa.value) as values')
+      .groupBy('attr.id')
+      .addGroupBy('attr.key')
+      .addGroupBy('attr.name')
+      .orderBy('attr.id', 'ASC');
+
+    return qb.getRawMany();
   }
 }

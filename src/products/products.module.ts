@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Product } from './entities/product.entity';
 import { ProductVariant } from './entities/product-variant.entity';
 import { ProductColor } from './entities/product-color.entity';
+import { ProductAttribute } from './entities/product-attribute.entity';
+import { CategoryAttribute } from '../categories/entities/category-attribute.entity';
 import { Image } from '../images/entities/image.entity';
 import { Rate } from '../rates/entities/rate.entity';
 import { ProductsController } from './products.controller';
@@ -14,6 +16,8 @@ import { ProductsService } from './products.service';
       Product,
       ProductVariant,
       ProductColor,
+      ProductAttribute,
+      CategoryAttribute,
       Image,
       Rate,
     ]),
