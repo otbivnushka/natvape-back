@@ -77,6 +77,32 @@ export class OrdersService {
       throw new BadRequestException('Cart is empty');
     }
 
+    const stockErrors: string[] = [];
+    for (const item of cartItems) {
+      if (!item.variantKey) continue;
+
+      const variant = item.product.variants?.find((v) => v.value === item.variantKey);
+      const color = item.product.colors?.find((c) => c.hex === item.variantKey);
+
+      if (!variant && !color) {
+        stockErrors.push(
+          `Товар "${item.product.name}" (${item.variantKey}): вариант не найден`,
+        );
+        continue;
+      }
+
+      const stock = variant?.stock ?? color!.stock;
+      if (stock < item.quantity) {
+        stockErrors.push(
+          `Товар "${item.product.name}" (${variant?.name ?? color!.name}): доступно ${stock} шт., запрошено ${item.quantity} шт.`,
+        );
+      }
+    }
+
+    if (stockErrors.length) {
+      throw new BadRequestException(stockErrors);
+    }
+
     const groups = new Map<number, CartItem[]>();
     for (const item of cartItems) {
       const arr = groups.get(item.productId) || [];
