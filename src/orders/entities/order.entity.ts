@@ -27,6 +27,9 @@ export class Order {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   total: number;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  actualPrice: number | null;
+
   @Column({ length: 20 })
   status: string;
 

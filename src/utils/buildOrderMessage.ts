@@ -50,3 +50,34 @@ export function buildOrderMessage(order: Order): string {
 
   return lines.join('\n');
 }
+
+export function buildIncomeOrderMessage(order: Order): string {
+  const lines: string[] = [];
+
+  lines.push(`Заказ #${order.id}`);
+
+  const userName = order.user?.name ?? `#${order.userId}`;
+
+  lines.push(`Клиент: ${userName}`);
+
+  const method = order.deliveryMethod === 'delivery' ? 'Курьер' : 'Самовывоз';
+  lines.push(`Способ: ${method}`);
+
+  if (order.address) {
+    lines.push(`Адрес: ${order.address.label}`);
+  }
+
+  if (order.comment) {
+    lines.push(`Комментарий: ${order.comment}`);
+  }
+
+    if (order.total) {
+    lines.push(`Цена: ${order.total}`);
+  }
+
+  if (order.actualPrice) {
+    lines.push(`Фактическая цена: ${order.actualPrice}`);
+  }
+
+  return lines.join('\n');
+}

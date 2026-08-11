@@ -89,6 +89,7 @@ export class Init1780755234225 implements MigrationInterface {
       id SERIAL PRIMARY KEY,
       user_id INT NOT NULL REFERENCES users(id),
       total DECIMAL(10,2) NOT NULL,
+      actual_price DECIMAL(10,2) NULL,
       status VARCHAR(20) NOT NULL DEFAULT 'sent',
       delivery_method VARCHAR(20) NOT NULL,
       comment TEXT NULL,

@@ -117,6 +117,7 @@ async function seed() {
     const savedOrder1 = await queryRunner.manager.save(Order, {
       userId: savedUser.id,
       total: 49,
+      actualPrice: 49,
       status: 'end',
       deliveryMethod: 'pickup',
       addressId: address1.id,
@@ -139,6 +140,7 @@ async function seed() {
     const savedOrder2 = await queryRunner.manager.save(Order, {
       userId: savedUser.id,
       total: 75,
+      actualPrice: 75,
       status: 'sent',
       deliveryMethod: 'delivery',
       comment: 'Позвонить перед выходом',
@@ -161,6 +163,7 @@ async function seed() {
     const savedOrder3 = await queryRunner.manager.save(Order, {
       userId: savedUser.id,
       total: 159,
+      actualPrice: 159,
       status: 'sent',
       deliveryMethod: 'pickup',
       addressId: address3.id,

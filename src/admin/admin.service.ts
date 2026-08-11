@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, FindOptionsWhere, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { Product } from '../products/entities/product.entity';
 import { ProductVariant } from '../products/entities/product-variant.entity';
 import { ProductColor } from '../products/entities/product-color.entity';
@@ -206,11 +206,35 @@ export class AdminService {
     });
   }
 
+  async getOrdersByDate(from?: string, to?: string) {
+    const where: FindOptionsWhere<Order> = {};
+    if (from && to) {
+      where.createdAt = Between(new Date(from), new Date(to));
+    } else if (from) {
+      where.createdAt = MoreThanOrEqual(new Date(from));
+    } else if (to) {
+      where.createdAt = LessThanOrEqual(new Date(to));
+    }
+    return this.ordersRepository.find({
+      where,
+      order: { createdAt: 'DESC' },
+      relations: { address: true, user: true, items: true },
+    });
+  }
+
   async updateOrderStatus(id: number, dto: UpdateOrderStatusDto) {
     const order = await this.ordersRepository.findOneBy({ id });
     if (!order) throw new NotFoundException('Order not found');
 
     order.status = dto.status;
+    return this.ordersRepository.save(order);
+  }
+
+  async updateOrderActualPrice(id: number, price: number) {
+    const order = await this.ordersRepository.findOneBy({ id });
+    if (!order) throw new NotFoundException('Order not found');
+
+    order.actualPrice = price;
     return this.ordersRepository.save(order);
   }
 
@@ -356,7 +380,10 @@ export class AdminService {
     await this.categoryAttributesRepository.remove(attr);
   }
 
-  async createProductAttribute(productId: number, dto: CreateProductAttributeDto) {
+  async createProductAttribute(
+    productId: number,
+    dto: CreateProductAttributeDto,
+  ) {
     const product = await this.productsRepository.findOneBy({ id: productId });
     if (!product) throw new NotFoundException('Product not found');
 
@@ -369,7 +396,9 @@ export class AdminService {
   }
 
   async updateProductAttribute(attrId: number, dto: UpdateProductAttributeDto) {
-    const attr = await this.productAttributesRepository.findOneBy({ id: attrId });
+    const attr = await this.productAttributesRepository.findOneBy({
+      id: attrId,
+    });
     if (!attr) throw new NotFoundException('Product attribute not found');
 
     attr.value = dto.value;
@@ -377,7 +406,9 @@ export class AdminService {
   }
 
   async deleteProductAttribute(attrId: number) {
-    const attr = await this.productAttributesRepository.findOneBy({ id: attrId });
+    const attr = await this.productAttributesRepository.findOneBy({
+      id: attrId,
+    });
     if (!attr) throw new NotFoundException('Product attribute not found');
     await this.productAttributesRepository.remove(attr);
   }

@@ -71,10 +71,16 @@ export class AuthService {
             .join(' ')
             .trim() || 'User',
       });
-    } else if (!user.telegramUsername && tgUser.username) {
-      await this.usersService.update(user.id, {
-        telegramUsername: tgUser.username,
+    } else {
+      const updated = await this.usersService.update(user.id, {
+        telegramUsername: tgUser.username ?? null,
+        name:
+          [tgUser.first_name, tgUser.last_name]
+            .filter(Boolean)
+            .join(' ')
+            .trim() || 'User',
       });
+      if (updated) user = updated;
     }
 
     const { accessToken, refreshToken } = this.generateTokens(user.id);

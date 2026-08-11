@@ -4,14 +4,23 @@ import { UsersService } from './users/users.service';
 import TelegramBot, { CallbackQuery } from 'node-telegram-bot-api';
 import { isAdmin } from './utils/isAdmin';
 import { AdminService } from './admin/admin.service';
-import { buildOrderMessage } from './utils/buildOrderMessage';
+import {
+  buildIncomeOrderMessage,
+  buildOrderMessage,
+} from './utils/buildOrderMessage';
 import { Order } from './orders/entities/order.entity';
 import { sendTelegramMessage } from './utils/sendTelegramMessage';
 import { OrdersService } from './orders/orders.service';
+import { normalizeDate } from './utils/normalizeDate';
 
 const mailingState = new Map<
   number,
   { step: 'awaiting_image' | 'awaiting_text'; image?: string }
+>();
+
+const priceState = new Map<
+  number,
+  { step: 'awaiting_order_id' | 'awaiting_price'; orderId?: number }
 >();
 
 export function startBot(app: INestApplication) {
@@ -124,6 +133,52 @@ export function startBot(app: INestApplication) {
     })();
   });
 
+  bot.onText(/\/income/, (msg) => {
+    void (async () => {
+      try {
+        const user = await usersService.findByTelegramId(msg.chat.id);
+        if (!isAdmin(user)) return;
+        if (!msg.text) return;
+
+        const dateStr = normalizeDate(msg.text.split(' ')[1]);
+
+        const start = new Date(`${dateStr}T00:00:00`).toISOString();
+        const end = new Date(`${dateStr}T23:59:59.999`).toISOString();
+
+        const orders = await adminService.getOrdersByDate(start, end);
+
+        if (!orders.length) {
+          await bot.sendMessage(msg.chat.id, `Заказов за ${dateStr} нет`);
+          return;
+        }
+
+        const lines: string[] = [`Заказы за ${dateStr}:`, ''];
+        let totalIncome = 0;
+        for (const order of orders) {
+          lines.push(buildIncomeOrderMessage(order));
+          lines.push('');
+          totalIncome += Number(order.actualPrice ?? order.total);
+        }
+        lines.push(`Итого выручка: ${totalIncome} руб`);
+
+        await bot.sendMessage(msg.chat.id, lines.join('\n'), {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: 'Изм факт цену',
+                  callback_data: `change_actual_price`,
+                },
+              ],
+            ],
+          },
+        });
+      } catch (e) {
+        await bot.sendMessage(msg.chat.id, `Ошибка: ${(e as Error).message}`);
+      }
+    })();
+  });
+
   bot.onText(/\/ahelp/, (msg) => {
     void (async () => {
       const user = await usersService.findByTelegramId(msg.chat.id);
@@ -167,6 +222,48 @@ export function startBot(app: INestApplication) {
   bot.on('message', (msg) => {
     void (async () => {
       if (!msg.text) return;
+      const chatId = msg.chat.id;
+
+      const price = priceState.get(chatId);
+      if (price) {
+        if (msg.text.toLowerCase() === 'отмена') {
+          priceState.delete(chatId);
+          await bot.sendMessage(chatId, 'Отменено');
+          return;
+        }
+
+        if (price.step === 'awaiting_order_id') {
+          const orderId = Number(msg.text.trim());
+          if (!Number.isInteger(orderId) || orderId <= 0) {
+            await bot.sendMessage(chatId, 'Некорректный номер заказа. Попробуйте ещё раз:');
+            return;
+          }
+          priceState.set(chatId, { step: 'awaiting_price', orderId });
+          await bot.sendMessage(chatId, `Заказ #${orderId}. Введите новую фактическую цену:`);
+          return;
+        }
+
+        const orderId = price.orderId!;
+        const rawPrice = msg.text.trim().replace(',', '.');
+        const newPrice = Number(rawPrice);
+        if (!rawPrice || isNaN(newPrice) || newPrice < 0) {
+          await bot.sendMessage(chatId, 'Некорректная цена. Попробуйте ещё раз:');
+          return;
+        }
+        try {
+          await adminService.updateOrderActualPrice(orderId, newPrice);
+          priceState.delete(chatId);
+          await bot.sendMessage(
+            chatId,
+            `✅ Цена заказа #${orderId} изменена на ${newPrice} руб`,
+          );
+        } catch (e) {
+          priceState.delete(chatId);
+          await bot.sendMessage(chatId, `Ошибка: ${(e as Error).message}`);
+        }
+        return;
+      }
+
       const state = mailingState.get(msg.chat.id);
       if (!state) return;
 
@@ -253,6 +350,11 @@ export function startBot(app: INestApplication) {
         break;
       case 'ask':
         await askToWrite(bot, query, +getParam(data));
+        break;
+      case 'change_actual_price':
+        priceState.set(chatId, { step: 'awaiting_order_id' });
+        await bot.answerCallbackQuery(query.id);
+        await bot.sendMessage(chatId, 'Введите номер заказа:');
         break;
       default:
         console.log('idk');

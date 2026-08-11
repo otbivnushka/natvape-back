@@ -124,6 +124,7 @@ export class OrdersService {
     const order = this.ordersRepository.create({
       userId,
       total: finalTotal,
+      actualPrice: finalTotal,
       status: 'sent',
       deliveryMethod: dto.deliveryMethod,
       comment: dto.comment ?? null,
