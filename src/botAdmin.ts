@@ -342,7 +342,21 @@ export function startBot(app: INestApplication, dumbBot: TelegramBot) {
         await checkAllOrders(bot, adminService, query, +getParam(data));
         break;
       case 'ask':
-        await askToWrite(dumbBot, query, +getParam(data));
+        await askToWrite(bot, query, +getParam(data));
+        break;
+      case 'userlink':
+        await dumbBot.sendMessage(query.message!.chat.id, 'Юзер', {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: 'Открыть профиль',
+                  url: `tg://user?id=${getParam(data)}`,
+                },
+              ],
+            ],
+          },
+        });
         break;
       case 'change_actual_price':
         priceState.set(chatId, { step: 'awaiting_order_id' });
@@ -421,7 +435,7 @@ async function askToWrite(
   userTelegramId: number,
 ) {
   const text =
-    'Ваши настройки безопасности не позволяют отправить сообщение. Напишите на аккаунт @Chechpomasti';
+    'Ваши настройки безопасности не позволяют отправить сообщение. Напишите на аккаунт @ManagerNatv';
   const res = await sendTelegramMessage(userTelegramId, text, 'dumb');
   await bot.sendMessage(
     query.message!.chat.id,
@@ -434,6 +448,9 @@ function buildOrderKeyboard(
   frontendUrl: string,
   canOpenProfile: boolean,
 ) {
+  const footerRow = [
+    { text: 'отпр ссылку', callback_data: `userlink:${order.user.telegramId}` },
+  ];
   const lastRow = order.address?.label
     ? [
         {
@@ -480,6 +497,7 @@ function buildOrderKeyboard(
           },
         ],
         lastRow,
+        footerRow,
       ],
     },
   };

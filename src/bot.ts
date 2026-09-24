@@ -29,6 +29,7 @@ export function startDumbBot(app: INestApplication): TelegramBot {
         ],
       },
     });
+    
   });
 
   console.log('Dumb bot started');
