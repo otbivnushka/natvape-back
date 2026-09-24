@@ -345,7 +345,7 @@ export function startBot(app: INestApplication, dumbBot: TelegramBot) {
         await askToWrite(bot, query, +getParam(data));
         break;
       case 'userlink':
-        await getUserLink(bot, query, data);
+        await getUserLink(dumbBot, query, data);
         break;
       case 'change_actual_price':
         priceState.set(chatId, { step: 'awaiting_order_id' });
