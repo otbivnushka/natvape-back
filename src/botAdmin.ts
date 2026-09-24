@@ -345,18 +345,7 @@ export function startBot(app: INestApplication, dumbBot: TelegramBot) {
         await askToWrite(bot, query, +getParam(data));
         break;
       case 'userlink':
-        await dumbBot.sendMessage(query.message!.chat.id, 'Юзер', {
-          reply_markup: {
-            inline_keyboard: [
-              [
-                {
-                  text: 'Открыть профиль',
-                  url: `tg://user?id=${getParam(data)}`,
-                },
-              ],
-            ],
-          },
-        });
+        await getUserLink(bot, query, data);
         break;
       case 'change_actual_price':
         priceState.set(chatId, { step: 'awaiting_order_id' });
@@ -373,6 +362,29 @@ export function startBot(app: INestApplication, dumbBot: TelegramBot) {
 
 const getCommand = (input: string) => input.split(':')[0];
 const getParam = (input: string) => input.split(':')[1];
+
+async function getUserLink(
+  dumbBot: TelegramBot,
+  query: CallbackQuery,
+  data: string,
+) {
+  try {
+    await dumbBot.sendMessage(query.message!.chat.id, 'Юзер', {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: 'Открыть профиль',
+              url: `tg://user?id=${getParam(data)}`,
+            },
+          ],
+        ],
+      },
+    });
+  } catch (e) {
+    await dumbBot.sendMessage(query.message!.chat.id, 'А вот хуй тебе, потому что\n```' + (e as Error).message + '```');
+  }
+}
 
 async function deleteOrder(
   bot: TelegramBot,
