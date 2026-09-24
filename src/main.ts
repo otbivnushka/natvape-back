@@ -7,7 +7,8 @@ import { DataSource } from 'typeorm';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { startBot } from './bot';
+import { startDumbBot } from './bot';
+import { startBot } from './botAdmin';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -30,8 +31,8 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('NatVape API')
-    .setDescription('Backend for NatVape Telegram Mini App')
+    .setTitle('NatShop API')
+    .setDescription('Backend for NatShop Telegram Mini App')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -65,6 +66,7 @@ async function bootstrap() {
   const ratingSql = readFileSync(ratingSqlPath, 'utf8');
   await dataSource.query(ratingSql);
 
+  startDumbBot(app);
   startBot(app);
 }
 void bootstrap();
