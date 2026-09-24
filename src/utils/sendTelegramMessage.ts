@@ -1,11 +1,14 @@
 async function sendTelegramMessage(
   chatId: number,
   text: string,
+  bot: 'admin' | 'dumb',
   extra: Record<string, unknown> = {},
 ): Promise<boolean> {
   try {
-    const BOT_TOKEN = process.env.ADMIN_BOT_TOKEN;
-    const TELEGRAM_API_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
+    const BOT_TOKEN = process.env.BOT_TOKEN;
+    const ADMIN_BOT_TOKEN = process.env.ADMIN_BOT_TOKEN;
+
+    const TELEGRAM_API_URL = `https://api.telegram.org/bot${bot === 'admin' ? ADMIN_BOT_TOKEN : BOT_TOKEN}`;
 
     const res = await fetch(`${TELEGRAM_API_URL}/sendMessage`, {
       method: 'POST',

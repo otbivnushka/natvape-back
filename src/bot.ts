@@ -2,16 +2,15 @@ import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import TelegramBot from 'node-telegram-bot-api';
 
-export function startDumbBot(app: INestApplication) {
+export function startDumbBot(app: INestApplication): TelegramBot {
   const configService = app.get(ConfigService);
 
-  const enabled = configService.get<string>('BOT_ENABLED', 'false');
-  if (enabled !== 'true') return;
+  //const enabled = configService.get<string>('BOT_ENABLED', 'false');
+  //if (enabled !== 'true');
 
   const token = configService.get<string>('BOT_TOKEN', '');
   if (!token) {
     console.error('BOT_TOKEN is not set');
-    return;
   }
 
   const bot = new TelegramBot(token, { polling: true });
@@ -33,4 +32,6 @@ export function startDumbBot(app: INestApplication) {
   });
 
   console.log('Dumb bot started');
+
+  return bot;
 }

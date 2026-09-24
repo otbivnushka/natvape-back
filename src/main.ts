@@ -66,7 +66,7 @@ async function bootstrap() {
   const ratingSql = readFileSync(ratingSqlPath, 'utf8');
   await dataSource.query(ratingSql);
 
-  startDumbBot(app);
-  startBot(app);
+  const dumbBot = startDumbBot(app);
+  startBot(app, dumbBot);
 }
 void bootstrap();

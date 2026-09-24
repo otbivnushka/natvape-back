@@ -81,7 +81,9 @@ export class OrdersService {
     for (const item of cartItems) {
       if (!item.variantKey) continue;
 
-      const variant = item.product.variants?.find((v) => v.value === item.variantKey);
+      const variant = item.product.variants?.find(
+        (v) => v.value === item.variantKey,
+      );
       const color = item.product.colors?.find((c) => c.hex === item.variantKey);
 
       if (!variant && !color) {
@@ -138,9 +140,13 @@ export class OrdersService {
       this.orderItemRepository.create({
         orderId: savedOrder.id,
         productId: item.productId,
-        productName: item.product.name + (item.product.attributes?.length
-          ? ' (' + item.product.attributes.map(a => a.value).join(', ') + ')'
-          : ''),
+        productName:
+          item.product.name +
+          (item.product.attributes?.length
+            ? ' (' +
+              item.product.attributes.map((a) => a.value).join(', ') +
+              ')'
+            : ''),
         productImage: this.resolveImageUrl(item.product.image),
         variantKey: item.variantKey,
         variantName: item.variantName ?? null,
@@ -192,6 +198,7 @@ export class OrdersService {
       await sendTelegramMessage(
         admin.telegramId,
         buildOrderMessage(returnOrder!),
+        'admin',
       );
     }
 

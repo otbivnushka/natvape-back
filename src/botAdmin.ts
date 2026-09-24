@@ -23,7 +23,7 @@ const priceState = new Map<
   { step: 'awaiting_order_id' | 'awaiting_price'; orderId?: number }
 >();
 
-export function startBot(app: INestApplication) {
+export function startBot(app: INestApplication, dumbBot: TelegramBot) {
   const configService = app.get(ConfigService);
   const usersService = app.get(UsersService);
   const adminService = app.get(AdminService);
@@ -291,11 +291,11 @@ export function startBot(app: INestApplication) {
       for (const u of allUsers) {
         try {
           if (state.image) {
-            await bot.sendPhoto(Number(u.telegramId), state.image, {
+            await dumbBot.sendPhoto(Number(u.telegramId), state.image, {
               caption: msg.text,
             });
           } else {
-            await bot.sendMessage(Number(u.telegramId), msg.text);
+            await dumbBot.sendMessage(Number(u.telegramId), msg.text);
           }
           success++;
         } catch {
@@ -342,7 +342,7 @@ export function startBot(app: INestApplication) {
         await checkAllOrders(bot, adminService, query, +getParam(data));
         break;
       case 'ask':
-        await askToWrite(bot, query, +getParam(data));
+        await askToWrite(dumbBot, query, +getParam(data));
         break;
       case 'change_actual_price':
         priceState.set(chatId, { step: 'awaiting_order_id' });
@@ -421,8 +421,8 @@ async function askToWrite(
   userTelegramId: number,
 ) {
   const text =
-    'Ваши настройки безопасности не позволяют отправить сообщение. Напишите на аккаунт @NatManagerr';
-  const res = await sendTelegramMessage(userTelegramId, text);
+    'Ваши настройки безопасности не позволяют отправить сообщение. Напишите на аккаунт @Chechpomasti';
+  const res = await sendTelegramMessage(userTelegramId, text, 'dumb');
   await bot.sendMessage(
     query.message!.chat.id,
     res ? '✅ Сообщение отправлено' : '✅ Сообщение не отправлено',
