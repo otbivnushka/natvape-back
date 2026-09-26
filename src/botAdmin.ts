@@ -1,7 +1,10 @@
 import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from './users/users.service';
-import TelegramBot, { CallbackQuery } from 'node-telegram-bot-api';
+import TelegramBot, {
+  CallbackQuery,
+  InlineKeyboardButton,
+} from 'node-telegram-bot-api';
 import { isAdmin } from './utils/isAdmin';
 import { AdminService } from './admin/admin.service';
 import {
@@ -21,6 +24,17 @@ const mailingState = new Map<
 const priceState = new Map<
   number,
   { step: 'awaiting_order_id' | 'awaiting_price'; orderId?: number }
+>();
+
+const editState = new Map<
+  number,
+  {
+    step: 'awaiting_qty';
+    orderId: number;
+    productId: number;
+    variantKey: string | null;
+    variantName: string | null;
+  }
 >();
 
 export function startBot(app: INestApplication, dumbBot: TelegramBot) {
@@ -110,7 +124,11 @@ export function startBot(app: INestApplication, dumbBot: TelegramBot) {
         if (!orderId) return;
 
         const order = await orderService.findById(user.id, Number(orderId));
-        await bot.sendMessage(msg.chat.id, `${buildOrderMessage(order)}`);
+        if (!order) {
+          await bot.sendMessage(msg.chat.id, `Заказ #${orderId} не найден`);
+          return;
+        }
+        await sendOrderMessageWithButtons(bot, frontendUrl, msg.chat.id, order);
       } catch (e) {
         await bot.sendMessage(msg.chat.id, `Ошибка: ${(e as Error).message}`);
       }
@@ -257,6 +275,47 @@ export function startBot(app: INestApplication, dumbBot: TelegramBot) {
         return;
       }
 
+      const edit = editState.get(chatId);
+      if (edit) {
+        if (msg.text.toLowerCase() === 'отмена') {
+          editState.delete(chatId);
+          await bot.sendMessage(chatId, 'Отменено');
+          return;
+        }
+
+        const qty = Number(msg.text.trim());
+        if (!Number.isInteger(qty) || qty <= 0) {
+          await bot.sendMessage(
+            chatId,
+            'Некорректное количество. Введите целое число:',
+          );
+          return;
+        }
+        try {
+          const updated = await adminService.addOrderItem(
+            edit.orderId,
+            edit.productId,
+            edit.variantKey,
+            edit.variantName,
+            qty,
+          );
+          editState.delete(chatId);
+          await bot.sendMessage(chatId, '✅ Товар добавлен');
+          if (updated) {
+            await sendOrderMessageWithButtons(
+              bot,
+              frontendUrl,
+              chatId,
+              updated,
+            );
+          }
+        } catch (e) {
+          editState.delete(chatId);
+          await bot.sendMessage(chatId, `Ошибка: ${(e as Error).message}`);
+        }
+        return;
+      }
+
       const state = mailingState.get(msg.chat.id);
       if (!state) return;
 
@@ -328,6 +387,7 @@ export function startBot(app: INestApplication, dumbBot: TelegramBot) {
   bot.on('callback_query', async (query) => {
     const chatId = query.message!.chat.id;
     const data = query.data!;
+    const parts = data.split(':');
     const user = await usersService.findByTelegramId(chatId);
     if (!isAdmin(user)) return;
 
@@ -351,6 +411,56 @@ export function startBot(app: INestApplication, dumbBot: TelegramBot) {
         priceState.set(chatId, { step: 'awaiting_order_id' });
         await bot.answerCallbackQuery(query.id);
         await bot.sendMessage(chatId, 'Введите номер заказа:');
+        break;
+      case 'addprod':
+        await showProductList(
+          bot,
+          adminService,
+          query,
+          Number(parts[1]),
+          Number(parts[2]) || 1,
+        );
+        break;
+      case 'pickprod':
+        await showVariantPicker(
+          bot,
+          adminService,
+          query,
+          Number(parts[1]),
+          Number(parts[2]),
+        );
+        break;
+      case 'pickvar':
+        await selectVariant(
+          bot,
+          adminService,
+          query,
+          Number(parts[1]),
+          Number(parts[2]),
+          Number(parts[3]),
+        );
+        break;
+      case 'addback':
+        await returnToOrder(bot, adminService, frontendUrl, query, Number(parts[1]));
+        break;
+      case 'delitem':
+        await showItemRemoval(bot, adminService, query, Number(parts[1]));
+        break;
+      case 'delitemdo':
+        await performRemoveItem(
+          bot,
+          adminService,
+          frontendUrl,
+          query,
+          Number(parts[1]),
+          Number(parts[2]),
+        );
+        break;
+      case 'delback':
+        await returnToOrder(bot, adminService, frontendUrl, query, Number(parts[1]));
+        break;
+      case 'noop':
+        await bot.answerCallbackQuery(query.id);
         break;
       default:
         console.log('idk');
@@ -497,22 +607,253 @@ function buildOrderKeyboard(
         { text: 'Завершить заказ', callback_data: `complete:${order.id}` },
       ];
 
+  const keyboard: InlineKeyboardButton[][] = [firstRow];
+
+  if (order.status === 'sent') {
+    keyboard.push([
+      { text: '➕ Добавить товар', callback_data: `addprod:${order.id}:0` },
+      { text: '➖ Удалить товар', callback_data: `delitem:${order.id}` },
+    ]);
+  }
+
+  keyboard.push(
+    [
+      { text: 'Удалить заказ', callback_data: `delete:${order.id}` },
+      {
+        text: 'Посмотреть все заказы',
+        callback_data: `check_all:${order.user.id}`,
+      },
+    ],
+    lastRow,
+    footerRow,
+  );
+
   return {
     reply_markup: {
-      inline_keyboard: [
-        firstRow,
-        [
-          { text: 'Удалить заказ', callback_data: `delete:${order.id}` },
-          {
-            text: 'Посмотреть все заказы',
-            callback_data: `check_all:${order.user.id}`,
-          },
-        ],
-        lastRow,
-        footerRow,
-      ],
+      inline_keyboard: keyboard,
     },
   };
+}
+
+async function showProductList(
+  bot: TelegramBot,
+  adminService: AdminService,
+  query: CallbackQuery,
+  orderId: number,
+  page: number,
+) {
+  const chatId = query.message!.chat.id;
+  const messageId = query.message!.message_id;
+  const data = await adminService.getProductsPage(page, 8);
+
+  if (!data.items.length) {
+    await bot.answerCallbackQuery(query.id);
+    await bot.editMessageText('Нет товаров', {
+      chat_id: chatId,
+      message_id: messageId,
+    });
+    return;
+  }
+
+  const rows: InlineKeyboardButton[][] = data.items.map((p) => [
+    {
+      text: `${p.name} — ${p.price} руб`,
+      callback_data: `pickprod:${orderId}:${p.id}`,
+    },
+  ]);
+
+  const nav: InlineKeyboardButton[] = [];
+  if (page > 1) {
+    nav.push({ text: '◀️', callback_data: `addprod:${orderId}:${page - 1}` });
+  }
+  nav.push({ text: `${page}/${data.totalPages}`, callback_data: 'noop' });
+  if (page < data.totalPages) {
+    nav.push({ text: '▶️', callback_data: `addprod:${orderId}:${page + 1}` });
+  }
+  rows.push(nav);
+  rows.push([{ text: '⬅️ Назад', callback_data: `addback:${orderId}` }]);
+
+  await bot.answerCallbackQuery(query.id);
+  await bot.editMessageText(
+    `Заказ #${orderId}\nВыберите товар для добавления:`,
+    {
+      chat_id: chatId,
+      message_id: messageId,
+      reply_markup: { inline_keyboard: rows },
+    },
+  );
+}
+
+function getProductOptions(product: {
+  variants?: { name: string; value: string }[];
+  colors?: { name: string; hex: string }[];
+}) {
+  return [
+    ...(product.variants ?? []).map((v) => ({ key: v.value, name: v.name })),
+    ...(product.colors ?? []).map((c) => ({ key: c.hex, name: c.name })),
+  ];
+}
+
+async function showVariantPicker(
+  bot: TelegramBot,
+  adminService: AdminService,
+  query: CallbackQuery,
+  orderId: number,
+  productId: number,
+) {
+  const chatId = query.message!.chat.id;
+  const product = await adminService.getProductForEdit(productId);
+  if (!product) {
+    await bot.answerCallbackQuery(query.id, { text: 'Товар не найден' });
+    return;
+  }
+
+  const options = getProductOptions(product);
+
+  if (!options.length) {
+    editState.set(chatId, {
+      step: 'awaiting_qty',
+      orderId,
+      productId,
+      variantKey: null,
+      variantName: null,
+    });
+    await bot.answerCallbackQuery(query.id);
+    await bot.sendMessage(
+      chatId,
+      `Товар "${product.name}". Введите количество (или "отмена"):`,
+    );
+    return;
+  }
+
+  const rows: InlineKeyboardButton[][] = options.map((opt, index) => [
+    {
+      text: opt.name,
+      callback_data: `pickvar:${orderId}:${productId}:${index}`,
+    },
+  ]);
+  rows.push([{ text: '⬅️ Назад', callback_data: `addprod:${orderId}:1` }]);
+
+  await bot.answerCallbackQuery(query.id);
+  await bot.editMessageText(
+    `Заказ #${orderId}\nТовар "${product.name}". Выберите вариант:`,
+    {
+      chat_id: chatId,
+      message_id: query.message!.message_id,
+      reply_markup: { inline_keyboard: rows },
+    },
+  );
+}
+
+async function selectVariant(
+  bot: TelegramBot,
+  adminService: AdminService,
+  query: CallbackQuery,
+  orderId: number,
+  productId: number,
+  index: number,
+) {
+  const chatId = query.message!.chat.id;
+  const product = await adminService.getProductForEdit(productId);
+  if (!product) {
+    await bot.answerCallbackQuery(query.id, { text: 'Товар не найден' });
+    return;
+  }
+
+  const opt = getProductOptions(product)[index];
+  if (!opt) {
+    await bot.answerCallbackQuery(query.id, { text: 'Вариант не найден' });
+    return;
+  }
+
+  editState.set(chatId, {
+    step: 'awaiting_qty',
+    orderId,
+    productId,
+    variantKey: opt.key,
+    variantName: opt.name,
+  });
+  await bot.answerCallbackQuery(query.id, { text: opt.name });
+  await bot.sendMessage(
+    chatId,
+    `Товар "${product.name}" (${opt.name}). Введите количество (или "отмена"):`,
+  );
+}
+
+async function showItemRemoval(
+  bot: TelegramBot,
+  adminService: AdminService,
+  query: CallbackQuery,
+  orderId: number,
+) {
+  const chatId = query.message!.chat.id;
+  const order = await adminService.getOrderForEdit(orderId);
+  if (!order || !order.items?.length) {
+    await bot.answerCallbackQuery(query.id, { text: 'Нет товаров' });
+    return;
+  }
+
+  const rows: InlineKeyboardButton[][] = order.items.map((item, i) => [
+    {
+      text: `${i + 1}. ${item.productName}${
+        item.variantName ? ` (${item.variantName})` : ''
+      } x ${item.quantity}`,
+      callback_data: `delitemdo:${orderId}:${item.id}`,
+    },
+  ]);
+  rows.push([{ text: '⬅️ Назад', callback_data: `delback:${orderId}` }]);
+
+  await bot.answerCallbackQuery(query.id);
+  await bot.editMessageText(
+    `Заказ #${orderId}\nВыберите товар для удаления:`,
+    {
+      chat_id: chatId,
+      message_id: query.message!.message_id,
+      reply_markup: { inline_keyboard: rows },
+    },
+  );
+}
+
+async function performRemoveItem(
+  bot: TelegramBot,
+  adminService: AdminService,
+  frontendUrl: string,
+  query: CallbackQuery,
+  orderId: number,
+  itemId: number,
+) {
+  const chatId = query.message!.chat.id;
+  try {
+    const updated = await adminService.removeOrderItem(orderId, itemId);
+    await bot.answerCallbackQuery(query.id, { text: 'Товар удалён' });
+    if (!updated) return;
+    await bot.editMessageText(buildOrderMessage(updated), {
+      chat_id: chatId,
+      message_id: query.message!.message_id,
+      ...buildOrderKeyboard(updated, frontendUrl, true),
+    });
+  } catch (e) {
+    await bot.answerCallbackQuery(query.id, { text: 'Ошибка' });
+    await bot.sendMessage(chatId, `Ошибка: ${(e as Error).message}`);
+  }
+}
+
+async function returnToOrder(
+  bot: TelegramBot,
+  adminService: AdminService,
+  frontendUrl: string,
+  query: CallbackQuery,
+  orderId: number,
+) {
+  const chatId = query.message!.chat.id;
+  const order = await adminService.getOrderForEdit(orderId);
+  await bot.answerCallbackQuery(query.id);
+  if (!order) return;
+  await bot.editMessageText(buildOrderMessage(order), {
+    chat_id: chatId,
+    message_id: query.message!.message_id,
+    ...buildOrderKeyboard(order, frontendUrl, true),
+  });
 }
 
 function getYMapsLink(address: string) {

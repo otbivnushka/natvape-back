@@ -48,6 +48,17 @@ export function buildOrderMessage(order: Order): string {
   lines.push('');
   lines.push(`Итого: ${Number(order.total)} руб`);
 
+  if (Number(order.bonusUsed) > 0 || Number(order.bonusAccrued) > 0) {
+    const parts: string[] = [];
+    if (Number(order.bonusUsed) > 0) {
+      parts.push(`списано ${Number(order.bonusUsed)}`);
+    }
+    if (Number(order.bonusAccrued) > 0) {
+      parts.push(`начислено ${Number(order.bonusAccrued)}`);
+    }
+    lines.push(`Бонусы: ${parts.join(' / ')}`);
+  }
+
   return lines.join('\n');
 }
 

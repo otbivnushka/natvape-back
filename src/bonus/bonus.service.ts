@@ -106,6 +106,26 @@ export class BonusService {
       }),
     );
   }
+
+  async adjustForOrder(
+    user: User,
+    order: Order,
+    amount: number,
+    type: BonusTransactionType,
+    description: string,
+  ): Promise<void> {
+    if (amount === 0) return;
+
+    await this.bonusTransactionsRepository.save(
+      this.bonusTransactionsRepository.create({
+        userId: user.id,
+        orderId: order.id,
+        amount: Number(amount.toFixed(2)),
+        type,
+        description,
+      }),
+    );
+  }
 }
 
 function description_for_expire(orderId: number): string {

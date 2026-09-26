@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, FindOptionsWhere, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
+import { Repository, DataSource, FindOptionsWhere, Between, MoreThanOrEqual, LessThanOrEqual, In } from 'typeorm';
 import { BonusService } from '../bonus/bonus.service';
+import { BonusTransactionType } from '../bonus/entities/bonus-transaction.entity';
 import { Product } from '../products/entities/product.entity';
 import { ProductVariant } from '../products/entities/product-variant.entity';
 import { ProductColor } from '../products/entities/product-color.entity';
@@ -432,5 +437,260 @@ export class AdminService {
 
     const balance = await this.bonusService.getBalance(userId);
     return { userId, balance: Number(balance.toFixed(2)) };
+  }
+
+  async getProductsPage(page = 1, limit = 8) {
+    const [items, total] = await this.productsRepository.findAndCount({
+      relations: { variants: true, colors: true, image: true },
+      order: { id: 'ASC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return {
+      items: items.map((p) => ({
+        id: p.id,
+        name: p.name,
+        price: Number(p.price),
+        variants: p.variants?.map((v) => ({ name: v.name, value: v.value })) ?? [],
+        colors: p.colors?.map((c) => ({ name: c.name, hex: c.hex })) ?? [],
+      })),
+      total,
+      page,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    };
+  }
+
+  async getOrderForEdit(orderId: number) {
+    return this.ordersRepository.findOne({
+      where: { id: orderId },
+      relations: { items: true, user: true, address: true },
+    });
+  }
+
+  async getProductForEdit(productId: number) {
+    return this.productsRepository.findOne({
+      where: { id: productId },
+      relations: {
+        variants: true,
+        colors: true,
+        image: true,
+        attributes: { attribute: true },
+      },
+    });
+  }
+
+  private buildProductName(product: Product): string {
+    return (
+      product.name +
+      (product.attributes?.length
+        ? ' (' + product.attributes.map((a) => a.value).join(', ') + ')'
+        : '')
+    );
+  }
+
+  async addOrderItem(
+    orderId: number,
+    productId: number,
+    variantKey: string | null,
+    variantName: string | null,
+    quantity: number,
+  ) {
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      throw new BadRequestException('Invalid quantity');
+    }
+
+    const order = await this.ordersRepository.findOne({
+      where: { id: orderId },
+      relations: { items: true, user: true },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.status !== 'sent') {
+      throw new BadRequestException('Only sent orders can be edited');
+    }
+
+    const product = await this.productsRepository.findOne({
+      where: { id: productId },
+      relations: {
+        variants: true,
+        colors: true,
+        image: true,
+        attributes: { attribute: true },
+      },
+    });
+    if (!product) throw new NotFoundException('Product not found');
+
+    let variant: ProductVariant | undefined;
+    let color: ProductColor | undefined;
+    if (variantKey) {
+      variant = product.variants?.find((v) => v.value === variantKey);
+      color = product.colors?.find((c) => c.hex === variantKey);
+      if (!variant && !color) {
+        throw new BadRequestException('Variant not found');
+      }
+      const stock = variant?.stock ?? color!.stock;
+      if (stock < quantity) {
+        throw new BadRequestException(`Insufficient stock: ${stock}`);
+      }
+    }
+
+    const item = this.orderItemRepository.create({
+      orderId,
+      productId,
+      productName: this.buildProductName(product),
+      productImage:
+        product.image?.filename ??
+        'https://placehold.co/600x600?text=Нет+изображения',
+      variantKey: variantKey ?? null,
+      variantName: variantName ?? null,
+      quantity,
+      price: Number(product.price),
+    });
+    await this.orderItemRepository.save(item);
+
+    if (variant) {
+      await this.dataSource
+        .createQueryBuilder()
+        .update('product_variants')
+        .set({ stock: () => `GREATEST(0, stock - ${quantity})` })
+        .where('id = :id', { id: variant.id })
+        .execute();
+    } else if (color) {
+      await this.dataSource
+        .createQueryBuilder()
+        .update('product_colors')
+        .set({ stock: () => `GREATEST(0, stock - ${quantity})` })
+        .where('id = :id', { id: color.id })
+        .execute();
+    }
+
+    await this.recalculateOrder(orderId);
+    return this.getOrderForEdit(orderId);
+  }
+
+  async removeOrderItem(orderId: number, itemId: number) {
+    const order = await this.ordersRepository.findOne({
+      where: { id: orderId },
+      relations: { items: true, user: true },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.status !== 'sent') {
+      throw new BadRequestException('Only sent orders can be edited');
+    }
+
+    const item = order.items.find((i) => i.id === itemId);
+    if (!item) throw new NotFoundException('Order item not found');
+
+    if (item.variantKey) {
+      const variantResult = await this.dataSource
+        .createQueryBuilder()
+        .update('product_variants')
+        .set({ stock: () => `stock + ${item.quantity}` })
+        .where('product_id = :pid AND value = :val', {
+          pid: item.productId,
+          val: item.variantKey,
+        })
+        .execute();
+
+      if (variantResult.affected === 0) {
+        await this.dataSource
+          .createQueryBuilder()
+          .update('product_colors')
+          .set({ stock: () => `stock + ${item.quantity}` })
+          .where('product_id = :pid AND hex = :val', {
+            pid: item.productId,
+            val: item.variantKey,
+          })
+          .execute();
+      }
+    }
+
+    await this.orderItemRepository.remove(item);
+    await this.recalculateOrder(orderId);
+    return this.getOrderForEdit(orderId);
+  }
+
+  async recalculateOrder(orderId: number) {
+    const order = await this.ordersRepository.findOne({
+      where: { id: orderId },
+      relations: { items: true, user: true },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+
+    const items = order.items ?? [];
+
+    const groups = new Map<number, OrderItem[]>();
+    for (const item of items) {
+      const arr = groups.get(item.productId) || [];
+      arr.push(item);
+      groups.set(item.productId, arr);
+    }
+
+    const productIds = Array.from(groups.keys());
+    const products = productIds.length
+      ? await this.productsRepository.find({ where: { id: In(productIds) } })
+      : [];
+    const doublePriceMap = new Map<number, number | null>();
+    for (const p of products) {
+      doublePriceMap.set(p.id, p.doublePrice ? Number(p.doublePrice) : null);
+    }
+
+    let subtotal = 0;
+    let totalQty = 0;
+    for (const [productId, group] of groups) {
+      const qty = group.reduce((sum, i) => sum + i.quantity, 0);
+      totalQty += qty;
+      const price = Number(group[0].price);
+      const doublePrice = doublePriceMap.get(productId) ?? null;
+      if (!doublePrice) {
+        subtotal += qty * price;
+      } else {
+        const pairs = Math.floor(qty / 2);
+        const remainder = qty % 2;
+        subtotal += pairs * doublePrice + remainder * price;
+      }
+    }
+
+    const fee = order.deliveryMethod === 'delivery' && totalQty < 3 ? 3 : 0;
+    const payable = Number((subtotal + fee).toFixed(2));
+
+    const newBonusUsed = Math.min(order.bonusUsed ?? 0, Math.floor(payable));
+    const refund = (order.bonusUsed ?? 0) - newBonusUsed;
+    const newTotal = Number((payable - newBonusUsed).toFixed(2));
+    const newBonusAccrued = Number((newTotal * 0.03).toFixed(2));
+    const accrualDelta = Number(
+      (newBonusAccrued - Number(order.bonusAccrued ?? 0)).toFixed(2),
+    );
+
+    if (order.user) {
+      if (refund > 0) {
+        await this.bonusService.adjustForOrder(
+          order.user,
+          order,
+          refund,
+          BonusTransactionType.ADMIN_ADJUSTMENT,
+          `Возврат баллов за изменение заказа #${order.id}`,
+        );
+      }
+      if (accrualDelta !== 0) {
+        await this.bonusService.adjustForOrder(
+          order.user,
+          order,
+          accrualDelta,
+          accrualDelta > 0
+            ? BonusTransactionType.ACCRUAL
+            : BonusTransactionType.EXPIRE,
+          `Пересчёт баллов за заказ #${order.id}`,
+        );
+      }
+    }
+
+    order.total = newTotal;
+    order.actualPrice = newTotal;
+    order.bonusUsed = newBonusUsed;
+    order.bonusAccrued = newBonusAccrued;
+    await this.ordersRepository.save(order);
+
+    return this.getOrderForEdit(orderId);
   }
 }
