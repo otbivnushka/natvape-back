@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config'; 
 import { UsersService } from './users/users.service';
 import TelegramBot, {
   CallbackQuery,
@@ -53,7 +53,6 @@ export function startBot(app: INestApplication, dumbBot: TelegramBot) {
   }
 
   const bot = new TelegramBot(token, { polling: true });
-  const frontendUrl = configService.get<string>('FRONTEND_URL', '');
 
   bot.onText(/\/auth/, (msg) => {
     void (async () => {
@@ -128,7 +127,7 @@ export function startBot(app: INestApplication, dumbBot: TelegramBot) {
           await bot.sendMessage(msg.chat.id, `Заказ #${orderId} не найден`);
           return;
         }
-        await sendOrderMessageWithButtons(bot, frontendUrl, msg.chat.id, order);
+        await sendOrderMessageWithButtons(bot, msg.chat.id, order);
       } catch (e) {
         await bot.sendMessage(msg.chat.id, `Ошибка: ${(e as Error).message}`);
       }
@@ -302,12 +301,7 @@ export function startBot(app: INestApplication, dumbBot: TelegramBot) {
           editState.delete(chatId);
           await bot.sendMessage(chatId, '✅ Товар добавлен');
           if (updated) {
-            await sendOrderMessageWithButtons(
-              bot,
-              frontendUrl,
-              chatId,
-              updated,
-            );
+            await sendOrderMessageWithButtons(bot, chatId, updated);
           }
         } catch (e) {
           editState.delete(chatId);
@@ -379,7 +373,7 @@ export function startBot(app: INestApplication, dumbBot: TelegramBot) {
         return;
       }
       for (const order of orders) {
-        await sendOrderMessageWithButtons(bot, frontendUrl, msg.chat.id, order);
+        await sendOrderMessageWithButtons(bot, msg.chat.id, order);
       }
     })();
   });
@@ -441,7 +435,7 @@ export function startBot(app: INestApplication, dumbBot: TelegramBot) {
         );
         break;
       case 'addback':
-        await returnToOrder(bot, adminService, frontendUrl, query, Number(parts[1]));
+        await returnToOrder(bot, adminService, query, Number(parts[1]));
         break;
       case 'delitem':
         await showItemRemoval(bot, adminService, query, Number(parts[1]));
@@ -450,14 +444,13 @@ export function startBot(app: INestApplication, dumbBot: TelegramBot) {
         await performRemoveItem(
           bot,
           adminService,
-          frontendUrl,
           query,
           Number(parts[1]),
           Number(parts[2]),
         );
         break;
       case 'delback':
-        await returnToOrder(bot, adminService, frontendUrl, query, Number(parts[1]));
+        await returnToOrder(bot, adminService, query, Number(parts[1]));
         break;
       case 'noop':
         await bot.answerCallbackQuery(query.id);
@@ -565,14 +558,7 @@ async function askToWrite(
   );
 }
 
-function buildOrderKeyboard(
-  order: Order,
-  frontendUrl: string,
-  canOpenProfile: boolean,
-) {
-  const footerRow = [
-    { text: 'отпр ссылку', callback_data: `userlink:${order.user.telegramId}` },
-  ];
+function buildOrderKeyboard(order: Order, canOpenProfile: boolean) {
   const lastRow = order.address?.label
     ? [
         {
@@ -580,14 +566,14 @@ function buildOrderKeyboard(
           url: getYMapsLink(order.address?.label),
         },
         {
-          text: 'Открыть заказ',
-          web_app: { url: `${frontendUrl}admin/order/${order.id}` },
+          text: 'отпр ссылку',
+          callback_data: `userlink:${order.user.telegramId}`,
         },
       ]
     : [
         {
-          text: 'Открыть заказ',
-          web_app: { url: `${frontendUrl}admin/order/${order.id}` },
+          text: 'отпр ссылку',
+          callback_data: `userlink:${order.user.telegramId}`,
         },
       ];
 
@@ -625,7 +611,6 @@ function buildOrderKeyboard(
       },
     ],
     lastRow,
-    footerRow,
   );
 
   return {
@@ -817,7 +802,6 @@ async function showItemRemoval(
 async function performRemoveItem(
   bot: TelegramBot,
   adminService: AdminService,
-  frontendUrl: string,
   query: CallbackQuery,
   orderId: number,
   itemId: number,
@@ -830,7 +814,7 @@ async function performRemoveItem(
     await bot.editMessageText(buildOrderMessage(updated), {
       chat_id: chatId,
       message_id: query.message!.message_id,
-      ...buildOrderKeyboard(updated, frontendUrl, true),
+      ...buildOrderKeyboard(updated, true),
     });
   } catch (e) {
     await bot.answerCallbackQuery(query.id, { text: 'Ошибка' });
@@ -841,7 +825,6 @@ async function performRemoveItem(
 async function returnToOrder(
   bot: TelegramBot,
   adminService: AdminService,
-  frontendUrl: string,
   query: CallbackQuery,
   orderId: number,
 ) {
@@ -852,7 +835,7 @@ async function returnToOrder(
   await bot.editMessageText(buildOrderMessage(order), {
     chat_id: chatId,
     message_id: query.message!.message_id,
-    ...buildOrderKeyboard(order, frontendUrl, true),
+    ...buildOrderKeyboard(order, true),
   });
 }
 
@@ -863,7 +846,6 @@ function getYMapsLink(address: string) {
 
 async function sendOrderMessageWithButtons(
   bot: TelegramBot,
-  frontendUrl: string,
   chatId: number,
   order: Order,
 ) {
@@ -871,13 +853,13 @@ async function sendOrderMessageWithButtons(
     await bot.sendMessage(
       chatId,
       buildOrderMessage(order),
-      buildOrderKeyboard(order, frontendUrl, true),
+      buildOrderKeyboard(order, true),
     );
   } catch {
     await bot.sendMessage(
       chatId,
       buildOrderMessage(order),
-      buildOrderKeyboard(order, frontendUrl, false),
+      buildOrderKeyboard(order, false),
     );
   }
 }
