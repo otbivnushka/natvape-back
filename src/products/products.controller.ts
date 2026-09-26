@@ -12,7 +12,6 @@ export class ProductsController {
   @ApiOperation({ summary: 'Get all products with filters and pagination' })
   @ApiQuery({ name: 'userId', required: false, type: Number })
   async findAll(@Query() query: QueryProductsDto) {
-    console.log('findAll query:', JSON.stringify(query));
     return this.productsService.findAll(query);
   }
 

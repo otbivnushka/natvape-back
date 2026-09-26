@@ -15,6 +15,7 @@ import { Address } from '../addresses/entities/address.entity';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { User } from '../users/entities/user.entity';
+import { BonusModule } from '../bonus/bonus.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { User } from '../users/entities/user.entity';
       Story,
       Address,
     ]),
+    BonusModule,
   ],
   controllers: [AdminController],
   providers: [AdminService],

@@ -15,6 +15,7 @@ import { AdminModule } from './admin/admin.module';
 import { ImagesModule } from './images/images.module';
 import { RatesModule } from './rates/rates.module';
 import { StoriesModule } from './stories/stories.module';
+import { BonusModule } from './bonus/bonus.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { StoriesModule } from './stories/stories.module';
     ImagesModule,
     RatesModule,
     StoriesModule,
+    BonusModule,
   ],
 })
 export class AppModule {}

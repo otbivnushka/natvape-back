@@ -13,6 +13,7 @@ import { CartItem } from '../cart/entities/cart-item.entity';
 import { Image } from '../images/entities/image.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UsersService } from '../users/users.service';
+import { BonusService } from '../bonus/bonus.service';
 import { sendTelegramMessage } from '../utils/sendTelegramMessage';
 import { buildOrderMessage } from '../utils/buildOrderMessage';
 
@@ -31,6 +32,7 @@ export class OrdersService {
     private dataSource: DataSource,
     private configService: ConfigService,
     private usersService: UsersService,
+    private bonusService: BonusService,
   ) {
     this.baseUrl =
       this.configService.get<string>('BASE_URL') || 'http://localhost:3000';
@@ -121,7 +123,23 @@ export class OrdersService {
     if (dto.deliveryMethod === 'delivery' && totalQty < 3) {
       deliveryFee = 3;
     }
-    const finalTotal = Number(total.toFixed(2)) + deliveryFee;
+    const subtotal = Number(total.toFixed(2)) + deliveryFee;
+
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const bonusToUse = dto.bonusToUse ?? 0;
+    if (bonusToUse > 0) {
+      const balance = await this.bonusService.getBalance(userId);
+      if (bonusToUse > balance) {
+        throw new BadRequestException('Insufficient bonus balance');
+      }
+    }
+
+    const finalTotal = Number((subtotal - bonusToUse).toFixed(2));
+    const bonusAccrued = Number((finalTotal * 0.03).toFixed(2));
 
     const order = this.ordersRepository.create({
       userId,
@@ -132,6 +150,8 @@ export class OrdersService {
       comment: dto.comment ?? null,
       addressId: dto.addressId ?? null,
       deliveryTime: dto.deliveryTime ?? null,
+      bonusUsed: bonusToUse,
+      bonusAccrued,
     });
 
     const savedOrder = await this.ordersRepository.save(order);
@@ -157,8 +177,15 @@ export class OrdersService {
 
     await this.orderItemRepository.save(orderItems);
 
+    if (bonusToUse > 0) {
+      await this.bonusService.spend(user, savedOrder, bonusToUse);
+    }
+
+    if (bonusAccrued > 0) {
+      await this.bonusService.accrue(user, savedOrder, bonusAccrued);
+    }
+
     for (const item of cartItems) {
-      console.log(JSON.stringify(item));
       if (item.variantKey) {
         const variant = item.product.variants?.find(
           (v) => v.value === item.variantKey,
@@ -218,6 +245,8 @@ export class OrdersService {
       itemsCount: 0,
       addressId: order.addressId,
       deliveryTime: order.deliveryTime,
+      bonusUsed: order.bonusUsed,
+      bonusAccrued: Number(order.bonusAccrued),
       createdAt: order.createdAt,
     }));
   }

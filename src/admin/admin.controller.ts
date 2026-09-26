@@ -29,6 +29,7 @@ import { CreatePickupAddressDto } from './dto/create-pickup-address.dto';
 import { CreateCategoryAttributeDto } from './dto/create-category-attribute.dto';
 import { CreateProductAttributeDto } from './dto/create-product-attribute.dto';
 import { UpdateProductAttributeDto } from './dto/update-product-attribute.dto';
+import { AdjustBonusDto } from './dto/adjust-bonus.dto';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -230,5 +231,14 @@ export class AdminController {
   @ApiOperation({ summary: 'Delete product attribute value' })
   async deleteProductAttribute(@Param('attrId') attrId: string) {
     return this.adminService.deleteProductAttribute(+attrId);
+  }
+
+  @Post('users/:id/bonus')
+  @ApiOperation({ summary: 'Manually adjust user bonus balance' })
+  async adjustUserBonus(
+    @Param('id') userId: string,
+    @Body() dto: AdjustBonusDto,
+  ) {
+    return this.adminService.adjustUserBonus(+userId, dto);
   }
 }

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, FindOptionsWhere, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
+import { BonusService } from '../bonus/bonus.service';
 import { Product } from '../products/entities/product.entity';
 import { ProductVariant } from '../products/entities/product-variant.entity';
 import { ProductColor } from '../products/entities/product-color.entity';
@@ -29,6 +30,7 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { User } from '../users/entities/user.entity';
 import { CreateStorySetDto } from '../stories/dto/create-story-set.dto';
 import { CreateStoryDto } from '../stories/dto/create-story.dto';
+import { AdjustBonusDto } from './dto/adjust-bonus.dto';
 
 @Injectable()
 export class AdminService {
@@ -60,6 +62,7 @@ export class AdminService {
     @InjectRepository(CategoryAttribute)
     private categoryAttributesRepository: Repository<CategoryAttribute>,
     private dataSource: DataSource,
+    private bonusService: BonusService,
   ) {}
 
   async createProduct(dto: CreateProductDto) {
@@ -241,9 +244,13 @@ export class AdminService {
   async deleteOrder(id: number) {
     const order = await this.ordersRepository.findOne({
       where: { id },
-      relations: { items: true },
+      relations: { items: true, user: true },
     });
     if (!order) throw new NotFoundException('Order not found');
+
+    if (order.user) {
+      await this.bonusService.expireByOrder(order.user, order);
+    }
 
     for (const item of order.items) {
       if (!item.variantKey) continue;
@@ -411,5 +418,19 @@ export class AdminService {
     });
     if (!attr) throw new NotFoundException('Product attribute not found');
     await this.productAttributesRepository.remove(attr);
+  }
+
+  async adjustUserBonus(userId: number, dto: AdjustBonusDto) {
+    const user = await this.usersRepository.findOneBy({ id: userId });
+    if (!user) throw new NotFoundException('User not found');
+
+    await this.bonusService.adjust(
+      user,
+      dto.amount,
+      dto.description ?? 'Ручная корректировка баланса',
+    );
+
+    const balance = await this.bonusService.getBalance(userId);
+    return { userId, balance: Number(balance.toFixed(2)) };
   }
 }

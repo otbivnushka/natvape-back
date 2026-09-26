@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsIn, IsNumber } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsIn,
+  IsNumber,
+  IsInt,
+  Min,
+} from 'class-validator';
 
 export class CreateOrderDto {
   @IsString()
@@ -16,4 +23,9 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   deliveryTime?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  bonusToUse?: number;
 }

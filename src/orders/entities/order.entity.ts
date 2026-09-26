@@ -49,6 +49,12 @@ export class Order {
   @Column({ type: 'varchar', length: 50, nullable: true })
   deliveryTime: string | null;
 
+  @Column({ type: 'int', default: 0 })
+  bonusUsed: number;
+
+  @Column({ type: 'numeric', precision: 10, scale: 2, default: 0 })
+  bonusAccrued: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

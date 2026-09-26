@@ -64,7 +64,6 @@ export class ImagesController {
 
     res.sendFile(filePath, (err) => {
       if (err) {
-        console.error('[ImagesController] sendFile error:', err.message);
         if (!res.headersSent) {
           res.status(404).json({ message: 'File not found', statusCode: 404 });
         }
