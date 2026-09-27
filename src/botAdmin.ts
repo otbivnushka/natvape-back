@@ -113,6 +113,60 @@ export function startBot(app: INestApplication, dumbBot: TelegramBot) {
     })();
   });
 
+  bot.onText(/\/givebonus/, (msg) => {
+    void (async () => {
+      const user = await usersService.findByTelegramId(msg.chat.id);
+      if (!isAdmin(user)) return;
+      if (!msg.text) return;
+
+      const parts = msg.text.trim().split(/\s+/);
+      const rawUsername = parts[1];
+      const rawAmount = parts[2];
+      const reason = parts.slice(3).join(' ').trim();
+
+      if (!rawUsername || !rawAmount) {
+        await bot.sendMessage(
+          msg.chat.id,
+          'Использование: /givebonus <username> <amount> <reason>',
+        );
+        return;
+      }
+
+      const telegramUsername = rawUsername.replace(/^@/, '');
+      const amount = Number(rawAmount);
+      if (!Number.isInteger(amount)) {
+        await bot.sendMessage(msg.chat.id, 'amount должен быть целым числом');
+        return;
+      }
+
+      const target = await usersService.findByTelegramUsername(telegramUsername);
+      if (!target) {
+        await bot.sendMessage(
+          msg.chat.id,
+          `Пользователь @${telegramUsername} не найден`,
+        );
+        return;
+      }
+
+      const description =
+        reason || (amount >= 0 ? 'Ручное начисление' : 'Ручное списание');
+
+      try {
+        const res = await adminService.adjustUserBonus(target.id, {
+          amount,
+          description,
+        });
+        const sign = amount > 0 ? '+' : '';
+        await bot.sendMessage(
+          msg.chat.id,
+          `✅ @${telegramUsername}: ${sign}${amount} баллов\nПричина: ${description}\nБаланс: ${res.balance}`,
+        );
+      } catch (e) {
+        await bot.sendMessage(msg.chat.id, `Ошибка: ${(e as Error).message}`);
+      }
+    })();
+  });
+
   bot.onText(/\/getorder/, (msg) => {
     void (async () => {
       try {
@@ -187,7 +241,7 @@ export function startBot(app: INestApplication, dumbBot: TelegramBot) {
 
       await bot.sendMessage(
         msg.chat.id,
-        `/makeadmin <telegramUsername> - сделать админом\n/unmakeadmin <telegramUsername> - сделать не админом\n/swap <telegramUsername> <orderId> - поменять заказ у пользователя\n/getorder <orderId> - получить заказ`,
+        `/makeadmin <telegramUsername> - сделать админом\n/unmakeadmin <telegramUsername> - сделать не админом\n/swap <telegramUsername> <orderId> - поменять заказ у пользователя\n/getorder <orderId> - получить заказ\n/givebonus <username> <amount> <reason> - начислить/списать баллы (amount целое)`,
       );
     })();
   });
